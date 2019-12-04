@@ -1,5 +1,19 @@
+use std::io::BufRead;
+
 fn main() {
-    println!("Hello, world!");
+    let stdin = std::io::stdin();
+    let lock = stdin.lock();
+
+    let mut total_fuel = 0;
+
+    for line in lock.lines() {
+        let line = line.expect("file was not UTF-8");
+        let mass = line.parse().expect("could not parse line");
+
+        total_fuel += calculate_fuel(mass);
+    }
+
+    println!("Total fuel: {}", total_fuel);
 }
 
 fn calculate_fuel(mass: usize) -> usize {
