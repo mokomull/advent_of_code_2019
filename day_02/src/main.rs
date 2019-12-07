@@ -1,5 +1,9 @@
 fn parse_opcodes(input: &str) -> Vec<usize> {
-    unimplemented!()
+    input
+        .trim()
+        .split(',')
+        .map(|x| x.parse().expect("non-integer found"))
+        .collect()
 }
 
 fn run(opcodes: Vec<usize>) -> Vec<usize> {
