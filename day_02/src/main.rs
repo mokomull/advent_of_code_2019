@@ -34,7 +34,12 @@ fn run(mut opcodes: Vec<usize>) -> Vec<usize> {
 }
 
 fn main() {
-    unimplemented!()
+    let input = std::fs::read_to_string("inputs/day_02.txt").expect("input not found");
+    let mut opcodes = parse_opcodes(&input);
+    opcodes[1] = 12;
+    opcodes[2] = 2;
+    let result = run(opcodes);
+    println!("Position 0 contains: {}", result[0]);
 }
 
 #[cfg(test)]
