@@ -63,6 +63,7 @@ fn do_main(filename: &str) {
 
     let (noun, verb) = needle.expect("no satisfactory inputs found");
     println!("Necessary input is: {}", 100 * noun + verb);
+    assert_eq!((noun, verb), (84, 44));
 }
 
 #[cfg(test)]
