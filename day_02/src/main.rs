@@ -34,12 +34,17 @@ fn run(mut opcodes: Vec<usize>) -> Vec<usize> {
 }
 
 fn main() {
-    let input = std::fs::read_to_string("inputs/day_02.txt").expect("input not found");
+    do_main("inputs/day_02.txt");
+}
+
+fn do_main(filename: &str) {
+    let input = std::fs::read_to_string(filename).expect("input not found");
     let mut opcodes = parse_opcodes(&input);
     opcodes[1] = 12;
     opcodes[2] = 2;
     let result = run(opcodes);
     println!("Position 0 contains: {}", result[0]);
+    assert_eq!(result[0], 3101878);
 }
 
 #[cfg(test)]
@@ -58,5 +63,10 @@ mod test {
             super::run(super::parse_opcodes("1,9,10,3,2,3,11,0,99,30,40,50")),
             vec!(3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50)
         );
+    }
+
+    #[test]
+    fn main() {
+        super::do_main("../inputs/day_02.txt");
     }
 }
