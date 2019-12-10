@@ -1,7 +1,21 @@
 use std::collections::HashSet;
 
 fn main() {
-    println!("Hello, world!");
+    do_main("inputs/day_03.txt");
+}
+
+fn do_main(path: &str) {
+    let input = std::fs::read_to_string(path).expect("could not open input file");
+    let lines: Vec<&str> = input.trim().lines().collect();
+    assert_eq!(lines.len(), 2);
+
+    let distance = closest_intersection(&parse_sequence(lines[0]), &parse_sequence(lines[1]));
+
+    println!(
+        "Intersection closest to the origin is {} distance",
+        distance
+    );
+    assert_eq!(distance, 260);
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -125,5 +139,10 @@ mod test {
             ),
             135
         );
+    }
+
+    #[test]
+    fn main() {
+        do_main("../inputs/day_03.txt");
     }
 }
