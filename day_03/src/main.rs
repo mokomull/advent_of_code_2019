@@ -62,6 +62,14 @@ fn follow(path: &[Instruction]) -> HashSet<(isize, isize)> {
     result
 }
 
+fn closest_intersection(a: &[Instruction], b: &[Instruction]) -> isize {
+    intersect(a, b)
+        .iter()
+        .map(|&(x, y)| x.abs() + y.abs())
+        .min()
+        .unwrap()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -90,5 +98,32 @@ mod test {
         );
         x.sort();
         assert_eq!(x, vec![(3, 3), (6, 5)])
+    }
+
+    #[test]
+    fn closest_intersection() {
+        assert_eq!(
+            super::closest_intersection(
+                &parse_sequence("R8,U5,L5,D3"),
+                &parse_sequence("U7,R6,D4,L4"),
+            ),
+            6
+        );
+
+        assert_eq!(
+            super::closest_intersection(
+                &parse_sequence("R75,D30,R83,U83,L12,D49,R71,U7,L72"),
+                &parse_sequence("U62,R66,U55,R34,D71,R55,D58,R83")
+            ),
+            159
+        );
+
+        assert_eq!(
+            super::closest_intersection(
+                &parse_sequence("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"),
+                &parse_sequence("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")
+            ),
+            135
+        );
     }
 }
