@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 fn main() {
     println!("Hello, world!");
 }
@@ -35,6 +37,31 @@ fn parse_sequence(input: &str) -> Vec<Instruction> {
     result
 }
 
+fn intersect(a: &[Instruction], b: &[Instruction]) -> Vec<(isize, isize)> {
+    let seen_a = follow(a);
+    let seen_b = follow(b);
+    seen_a.intersection(&seen_b).cloned().collect()
+}
+
+fn follow(path: &[Instruction]) -> HashSet<(isize, isize)> {
+    let (mut x, mut y) = (0, 0);
+    let mut result = HashSet::new();
+
+    for i in path {
+        for _ in 0..i.count {
+            match i.dir {
+                Right => x += 1,
+                Left => x -= 1,
+                Up => y += 1,
+                Down => y -= 1,
+            }
+            result.insert((x, y));
+        }
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -53,5 +80,15 @@ mod test {
                 instruction(Down, 3),
             ]
         )
+    }
+
+    #[test]
+    fn intersect() {
+        let mut x = super::intersect(
+            &parse_sequence("R8,U5,L5,D3"),
+            &parse_sequence("U7,R6,D4,L4"),
+        );
+        x.sort();
+        assert_eq!(x, vec![(3, 3), (6, 5)])
     }
 }
