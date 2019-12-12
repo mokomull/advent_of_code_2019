@@ -20,6 +20,7 @@ fn do_main() {
     assert_eq!(count_1, 2220);
 
     println!("Valid passwords (part 2): {}", count_2);
+    assert_eq!(count_2, 1515);
 }
 
 fn check(i: usize) -> bool {
@@ -31,7 +32,7 @@ fn check(i: usize) -> bool {
 fn check_part_2(i: usize) -> bool {
     let stringy = format!("{}", i);
 
-    adjacent_digits(&stringy) && !too_many_adjacent_digits(&stringy) && in_order(&stringy)
+    exactly_two_same_digits(&stringy) && in_order(&stringy)
 }
 
 fn adjacent_digits(i: &str) -> bool {
@@ -44,14 +45,14 @@ fn adjacent_digits(i: &str) -> bool {
     false
 }
 
-fn too_many_adjacent_digits(i: &str) -> bool {
-    for (i, (j, k)) in i.chars().zip(i.chars().skip(1).zip(i.chars().skip(2))) {
-        if i == j && j == k {
-            return true;
-        }
+fn exactly_two_same_digits(i: &str) -> bool {
+    let mut digit_count = std::collections::HashMap::new();
+
+    for c in i.chars() {
+        *digit_count.entry(c).or_insert(0) += 1;
     }
 
-    false
+    digit_count.iter().any(|(&_c, &count)| count == 2)
 }
 
 fn in_order(i: &str) -> bool {
@@ -89,8 +90,10 @@ mod test {
 
     #[test]
     fn too_many_adjacent_digits() {
-        assert!(super::too_many_adjacent_digits("123444"));
+        assert!(!super::exactly_two_same_digits("123444"));
         assert!(!super::check_part_2(123444));
         assert!(super::check_part_2(111122));
+        assert!(!super::check_part_2(223450));
+        assert!(!super::check_part_2(123789));
     }
 }
