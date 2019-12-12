@@ -3,16 +3,23 @@ fn main() {
 }
 
 fn do_main() {
-    let mut count = 0;
+    let mut count_1 = 0;
+    let mut count_2 = 0;
 
     for i in 123257..=647015 {
         if check(i) {
-            count += 1;
+            count_1 += 1;
+        }
+
+        if check_part_2(i) {
+            count_2 += 1;
         }
     }
 
-    println!("Valid passwords: {}", count);
-    assert_eq!(count, 2220);
+    println!("Valid passwords: {}", count_1);
+    assert_eq!(count_1, 2220);
+
+    println!("Valid passwords (part 2): {}", count_2);
 }
 
 fn check(i: usize) -> bool {
@@ -21,9 +28,25 @@ fn check(i: usize) -> bool {
     adjacent_digits(&stringy) && in_order(&stringy)
 }
 
+fn check_part_2(i: usize) -> bool {
+    let stringy = format!("{}", i);
+
+    adjacent_digits(&stringy) && !too_many_adjacent_digits(&stringy) && in_order(&stringy)
+}
+
 fn adjacent_digits(i: &str) -> bool {
     for (i, j) in i.chars().zip(i.chars().skip(1)) {
         if i == j {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn too_many_adjacent_digits(i: &str) -> bool {
+    for (i, (j, k)) in i.chars().zip(i.chars().skip(1).zip(i.chars().skip(2))) {
+        if i == j && j == k {
             return true;
         }
     }
@@ -62,5 +85,12 @@ mod test {
     #[test]
     fn main() {
         super::do_main();
+    }
+
+    #[test]
+    fn too_many_adjacent_digits() {
+        assert!(super::too_many_adjacent_digits("123444"));
+        assert!(!super::check_part_2(123444));
+        assert!(super::check_part_2(111122));
     }
 }
