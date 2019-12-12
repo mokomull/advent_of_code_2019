@@ -1,5 +1,18 @@
 fn main() {
-    println!("Hello, world!");
+    do_main();
+}
+
+fn do_main() {
+    let mut count = 0;
+
+    for i in 123257..=647015 {
+        if check(i) {
+            count += 1;
+        }
+    }
+
+    println!("Valid passwords: {}", count);
+    assert_eq!(count, 2220);
 }
 
 fn check(i: usize) -> bool {
@@ -44,5 +57,10 @@ mod test {
         assert!(super::check(111111));
         assert!(!super::check(223450));
         assert!(!super::check(123789));
+    }
+
+    #[test]
+    fn main() {
+        super::do_main();
     }
 }
