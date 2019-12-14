@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::convert::TryInto;
 
-pub fn parse_opcodes(input: &str) -> Vec<usize> {
+pub fn parse_opcodes(input: &str) -> Vec<isize> {
     input
         .trim()
         .split(',')
@@ -9,16 +9,16 @@ pub fn parse_opcodes(input: &str) -> Vec<usize> {
         .collect()
 }
 
-pub fn run(opcodes: Vec<usize>) -> Vec<usize> {
+pub fn run(opcodes: Vec<isize>) -> Vec<isize> {
     let (memory, _output) = run_with_io(opcodes, VecDeque::new());
     memory
 }
 
 // Returns (memory, output)
 pub fn run_with_io(
-    mut opcodes: Vec<usize>,
-    mut input: VecDeque<usize>,
-) -> (Vec<usize>, Vec<usize>) {
+    mut opcodes: Vec<isize>,
+    mut input: VecDeque<isize>,
+) -> (Vec<isize>, Vec<isize>) {
     let mut ip = 0;
 
     loop {
@@ -39,7 +39,7 @@ pub fn run_with_io(
     (opcodes, vec![])
 }
 
-fn get_operands_3(opcodes: &[usize], ip: &mut usize) -> (usize, usize, usize) {
+fn get_operands_3(opcodes: &[isize], ip: &mut usize) -> (isize, isize, usize) {
     let source1 = get_read_operand_at(opcodes, *ip, 1);
     let source2 = get_read_operand_at(opcodes, *ip, 2);
     let destination = get_write_index_at(opcodes, *ip, 3);
@@ -49,19 +49,24 @@ fn get_operands_3(opcodes: &[usize], ip: &mut usize) -> (usize, usize, usize) {
     (source1, source2, destination)
 }
 
-fn get_read_operand_at(opcodes: &[usize], ip: usize, idx: usize) -> usize {
+fn get_read_operand_at(opcodes: &[isize], ip: usize, idx: usize) -> isize {
     let source_idx = opcodes[ip + idx];
-    match opcodes[ip] / 10usize.pow((idx + 1).try_into().unwrap()) % 10 {
-        0 => opcodes[source_idx],
+    match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
+        0 => {
+            let source_idx: usize = source_idx.try_into().expect("un-indexable memory offset");
+            opcodes[source_idx]
+        }
         1 => source_idx,
         x => panic!("Invalid parameter mode {} at ip {}", x, ip),
     }
 }
 
-fn get_write_index_at(opcodes: &[usize], ip: usize, idx: usize) -> usize {
+fn get_write_index_at(opcodes: &[isize], ip: usize, idx: usize) -> usize {
     let destination_idx = opcodes[ip + idx];
-    match opcodes[ip] / 10usize.pow((idx + 1).try_into().unwrap()) % 10 {
-        0 => destination_idx,
+    match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
+        0 => destination_idx
+            .try_into()
+            .expect("un-indexable memory offset"),
         x => panic!("Invalid destination parameter mode {} at ip {}", x, ip),
     }
 }
@@ -95,6 +100,14 @@ mod tests {
                 4,
                 33 /* memory at 4 */ * 3 /* immediate 3 */
             ]
+        );
+    }
+
+    #[test]
+    fn negative() {
+        assert_eq!(
+            super::run(vec![1101, 100, -1, 4, 0]),
+            vec![1101, 100, -1, 4, 99]
         );
     }
 }
