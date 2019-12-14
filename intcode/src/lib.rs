@@ -129,4 +129,46 @@ mod tests {
             vec![1101, 100, -1, 4, 99]
         );
     }
+
+    #[test]
+    fn jumps_and_tests() {
+        /* Using position mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not). */
+        let prog = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
+        assert_eq!(super::run_with_io(prog.clone(), vec![8].into()).1, vec![1]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![7].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![9].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![0]);
+
+        /* Using position mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not). */
+        let prog = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
+        assert_eq!(super::run_with_io(prog.clone(), vec![8].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![7].into()).1, vec![1]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![9].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![1]);
+
+        /* Using immediate mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not). */
+        let prog = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
+        assert_eq!(super::run_with_io(prog.clone(), vec![8].into()).1, vec![1]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![7].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![9].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![0]);
+
+        /* Using immediate mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not). */
+        let prog = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
+        assert_eq!(super::run_with_io(prog.clone(), vec![8].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![7].into()).1, vec![1]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![9].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![1]);
+
+        /* Here are some jump tests that take an input, then output 0 if the input was zero or 1 if the input was non-zero: */
+        let prog = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        assert_eq!(super::run_with_io(prog.clone(), vec![0].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![1].into()).1, vec![1]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![1]);
+
+        let prog = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
+        assert_eq!(super::run_with_io(prog.clone(), vec![0].into()).1, vec![0]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![1].into()).1, vec![1]);
+        assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![1]);
+    }
 }
