@@ -20,6 +20,7 @@ pub fn run_with_io(
     mut input: VecDeque<isize>,
 ) -> (Vec<isize>, Vec<isize>) {
     let mut ip = 0;
+    let mut output = Vec::new();
 
     loop {
         match opcodes[ip] % 100 {
@@ -31,12 +32,22 @@ pub fn run_with_io(
                 let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
                 opcodes[destination] = source1 * source2;
             }
+            3 => {
+                let destination = get_write_index_at(&opcodes, ip, 1);
+                opcodes[destination] = input.pop_front().expect("insufficient input provided");
+                ip += 2;
+            }
+            4 => {
+                let source = get_read_operand_at(&opcodes, ip, 1);
+                output.push(source);
+                ip += 2;
+            }
             99 => break,
             x => panic!("unexpected opcode found in position {}: {}", ip, x),
         }
     }
 
-    (opcodes, vec![])
+    (opcodes, output)
 }
 
 fn get_operands_3(opcodes: &[isize], ip: &mut usize) -> (isize, isize, usize) {
@@ -86,6 +97,14 @@ mod tests {
         assert_eq!(
             super::run(super::parse_opcodes("1,9,10,3,2,3,11,0,99,30,40,50")),
             vec!(3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50)
+        );
+    }
+
+    #[test]
+    fn io() {
+        assert_eq!(
+            super::run_with_io(vec!(3, 0, 4, 0, 99), vec!(12345).into()),
+            (vec![12345, 0, 4, 0, 99], vec![12345])
         );
     }
 
