@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::convert::TryInto;
 
 pub fn parse_opcodes(input: &str) -> Vec<usize> {
     input
@@ -39,30 +40,30 @@ pub fn run_with_io(
 }
 
 fn get_operands_3(opcodes: &[usize], ip: &mut usize) -> (usize, usize, usize) {
-    let source1_idx = opcodes[*ip + 1];
-    let source2_idx = opcodes[*ip + 2];
-    let destination_idx = opcodes[*ip + 3];
-
-    let source1 = match opcodes[*ip] / 100 % 10 {
-        0 => opcodes[source1_idx],
-        1 => source1_idx,
-        x => panic!("Invalid parameter mode {} at ip {}", x, *ip),
-    };
-
-    let source2 = match opcodes[*ip] / 1000 % 10 {
-        0 => opcodes[source2_idx],
-        1 => source2_idx,
-        x => panic!("Invalid parameter mode {} at ip {}", x, *ip),
-    };
-
-    let destination = match opcodes[*ip] / 10000 % 10 {
-        0 => destination_idx,
-        x => panic!("Invalid destination parameter mode {} at ip {}", x, *ip),
-    };
+    let source1 = get_read_operand_at(opcodes, *ip, 1);
+    let source2 = get_read_operand_at(opcodes, *ip, 2);
+    let destination = get_write_index_at(opcodes, *ip, 3);
 
     *ip += 4;
 
     (source1, source2, destination)
+}
+
+fn get_read_operand_at(opcodes: &[usize], ip: usize, idx: usize) -> usize {
+    let source_idx = opcodes[ip + idx];
+    match opcodes[ip] / 10usize.pow((idx + 1).try_into().unwrap()) % 10 {
+        0 => opcodes[source_idx],
+        1 => source_idx,
+        x => panic!("Invalid parameter mode {} at ip {}", x, ip),
+    }
+}
+
+fn get_write_index_at(opcodes: &[usize], ip: usize, idx: usize) -> usize {
+    let destination_idx = opcodes[ip + idx];
+    match opcodes[ip] / 10usize.pow((idx + 1).try_into().unwrap()) % 10 {
+        0 => destination_idx,
+        x => panic!("Invalid destination parameter mode {} at ip {}", x, ip),
+    }
 }
 
 #[cfg(test)]
