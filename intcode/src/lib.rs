@@ -29,8 +29,6 @@ pub fn run_with_io(opcodes: Vec<isize>, input: VecDeque<isize>) -> (Vec<isize>, 
     let mut pool = futures::executor::LocalPool::new();
     let results = pool.run_until(f);
 
-    dbg!(&results);
-
     let output: Vec<_> = results
         .iter()
         .filter_map(|s| match s {
@@ -51,15 +49,19 @@ pub fn stream_with_io(
     opcodes: Vec<isize>,
     input: Box<dyn Stream<Item = isize> + Unpin>,
 ) -> impl Stream<Item = Status> {
-    futures::stream::unfold((opcodes, input, 0), next_opcode)
+    futures::stream::unfold((opcodes, input, 0, false), next_opcode)
 }
 
 async fn next_opcode(
-    (mut opcodes, mut input, mut ip): (Vec<isize>, Box<dyn Stream<Item = isize> + Unpin>, usize),
+    (mut opcodes, mut input, mut ip, done): (Vec<isize>, Box<dyn Stream<Item = isize> + Unpin>, usize, bool),
 ) -> Option<(
     Status,
-    ((Vec<isize>, Box<dyn Stream<Item = isize> + Unpin>, usize)),
+    ((Vec<isize>, Box<dyn Stream<Item = isize> + Unpin>, usize, bool)),
 )> {
+    if done {
+        return None;
+    }
+
     loop {
         match opcodes[ip] % 100 {
             1 => {
@@ -77,7 +79,7 @@ async fn next_opcode(
             }
             4 => {
                 let source = get_read_operand_at(&opcodes, ip, 1);
-                return Some((Status::Output(source), (opcodes, input, ip + 2)));
+                return Some((Status::Output(source), (opcodes, input, ip + 2, false)));
             }
             5 => {
                 let (comparison, target) = get_operands_2(&opcodes, &mut ip);
@@ -107,12 +109,10 @@ async fn next_opcode(
                     opcodes[destination] = 0;
                 }
             }
-            99 => break,
+            99 => return Some((Status::Terminated(opcodes), (vec![], input, ip, true))),
             x => panic!("unexpected opcode found in position {}: {}", ip, x),
         }
     }
-
-    None
 }
 
 fn get_operands_3(opcodes: &[isize], ip: &mut usize) -> (isize, isize, usize) {
