@@ -25,24 +25,18 @@ pub fn run(opcodes: Vec<isize>) -> Vec<isize> {
 // Returns (memory, output)
 pub fn run_with_io(opcodes: Vec<isize>, input: VecDeque<isize>) -> (Vec<isize>, Vec<isize>) {
     let status = stream_with_io(opcodes, Box::new(futures::stream::iter(input)));
-    let f = status.collect::<Vec<_>>();
-    let mut pool = futures::executor::LocalPool::new();
-    let results = pool.run_until(f);
 
-    let output: Vec<_> = results
-        .iter()
-        .filter_map(|s| match s {
-            Status::Terminated(_) => None,
-            Status::Output(x) => Some(x),
-        })
-        .cloned()
-        .collect();
-    let memory = match results.iter().skip(output.len()).next() {
-        Some(Status::Terminated(memory)) => memory,
-        x => panic!("Unexpectedly got {:?}", x),
-    };
+    let mut output = Vec::new();
+    let mut memory = Vec::new();
 
-    (memory.clone(), output)
+    for s in futures::executor::block_on_stream(Box::pin(status)) {
+        match s {
+            Status::Terminated(x) => memory = x,
+            Status::Output(x) => output.push(x),
+        }
+    }
+
+    (memory, output)
 }
 
 pub fn stream_with_io(
