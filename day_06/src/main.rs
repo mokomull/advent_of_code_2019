@@ -14,9 +14,22 @@ fn do_main(path: &str) {
     assert_eq!(count, 273985);
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Node {
+    name: String,
     children: Vec<Rc<RefCell<Node>>>,
+}
+
+fn get_or_create<'a, 'b>(
+    nodes: &'a mut std::collections::HashMap<String, Rc<RefCell<Node>>>,
+    name: &'b str,
+) -> &'a mut Rc<RefCell<Node>> {
+    nodes.entry(name.to_owned()).or_insert_with(|| {
+        Rc::new(RefCell::new(Node {
+            name: name.to_owned(),
+            children: vec![],
+        }))
+    })
 }
 
 fn make_graph(input: &str) -> Node {
@@ -29,8 +42,8 @@ fn make_graph(input: &str) -> Node {
         let orbiter = tokens.next().expect("malformed input");
         assert!(tokens.next().is_none());
 
-        let orbiter_node = nodes.entry(orbiter.to_owned()).or_default().clone();
-        let mut node = nodes.entry(center.to_owned()).or_default().borrow_mut();
+        let orbiter_node = get_or_create(&mut nodes, orbiter).clone();
+        let mut node = get_or_create(&mut nodes, center).borrow_mut();
         node.children.push(orbiter_node);
     }
 
