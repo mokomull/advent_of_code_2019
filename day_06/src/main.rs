@@ -28,13 +28,22 @@ fn make_graph(input: &str) -> Node {
         let orbiter = tokens.next().expect("malformed input");
         assert!(tokens.next().is_none());
 
-        if root_name.is_empty() || root_name == orbiter {
-            root_name = center.to_owned();
-        }
-
         let orbiter_node = nodes.entry(orbiter.to_owned()).or_default().clone();
         let mut node = nodes.entry(center.to_owned()).or_default().borrow_mut();
         node.children.push(orbiter_node);
+    }
+
+    'outer: for (name, node) in &nodes {
+        for other_node in nodes.values() {
+            for child in &other_node.borrow().children {
+                if Rc::ptr_eq(&child, node) {
+                    continue 'outer;
+                }
+            }
+        }
+        // No other node has this node as a child, so it must be the root.
+        root_name = name.to_owned();
+        break;
     }
 
     let root_node = nodes
@@ -42,7 +51,6 @@ fn make_graph(input: &str) -> Node {
         .expect("root was not found in nodes");
     // Since this is the root, the refcount of root_node should be exactly 1 -- no other node is pointing at it.
     Rc::try_unwrap(root_node)
-        .ok() // throw away the "Err", which is probably a circular reference that is unprintable
         .expect("unexpected reference in the bagging area")
         .into_inner()
 }
@@ -90,7 +98,7 @@ K)L
                 .unwrap_err()
                 .downcast_ref::<String>()
                 .expect("should have panicked with a String"),
-            "unexpected reference in the bagging area"
+            "root was not found in nodes"
         );
     }
 }
