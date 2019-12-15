@@ -2,7 +2,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 fn main() {
-    println!("Hello, world!");
+    do_main("inputs/day_06.txt");
+}
+
+fn do_main(path: &str) {
+    let input = std::fs::read_to_string(path).expect("Could not read input");
+
+    let root = make_graph(&input);
+    let count = count_all_orbits(&root);
+    println!("Found {} orbits", count);
 }
 
 #[derive(Debug, Default)]
