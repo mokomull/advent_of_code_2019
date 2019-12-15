@@ -11,6 +11,7 @@ fn do_main(path: &str) {
     let root = make_graph(&input);
     let count = count_all_orbits(&root);
     println!("Found {} orbits", count);
+    assert_eq!(count, 273985);
 }
 
 #[derive(Debug, Default)]
@@ -100,5 +101,10 @@ K)L
                 .expect("should have panicked with a String"),
             "root was not found in nodes"
         );
+    }
+
+    #[test]
+    fn main() {
+        super::do_main("../inputs/day_06.txt");
     }
 }
