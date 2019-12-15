@@ -13,6 +13,16 @@ fn do_main(path: &str) {
     let count = count_all_orbits(&root);
     println!("Found {} orbits", count);
     assert_eq!(count, 273985);
+
+    let root = Rc::new(RefCell::new(root));
+    let path_to_you = find_path(&root, "YOU").expect("no path to YOU found");
+    let path_to_san = find_path(&root, "SAN").expect("no path to SAN found");
+    let count = count_uncommon_path_components(path_to_you, path_to_san);
+    println!(
+        "YOU would have to move {} times to become a sibling of SAN",
+        count
+    );
+    assert_eq!(count, 460);
 }
 
 #[derive(Debug)]
