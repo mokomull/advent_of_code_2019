@@ -39,7 +39,17 @@ fn make_graph(input: &str) -> Node {
 }
 
 fn count_all_orbits(root: &Node) -> usize {
-    unimplemented!()
+    fn count_children(this: &Node, level: usize) -> usize {
+        let mut count = level; // count this node for every parent that it has
+
+        for c in &this.children {
+            count += count_children(&c.borrow(), level + 1);
+        }
+
+        count
+    }
+
+    count_children(root, 0)
 }
 
 #[cfg(test)]
