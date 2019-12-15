@@ -43,19 +43,15 @@ pub fn run_with_io(
                 ip += 2;
             }
             5 => {
-                let source = get_read_operand_at(&opcodes, ip, 1);
-                if source != 0 {
-                    ip = source.try_into().expect("invalid jump address");
-                } else {
-                    ip += 2;
+                let (comparison, target) = get_operands_2(&opcodes, &mut ip);
+                if comparison != 0 {
+                    ip = target.try_into().expect("invalid jump address");
                 }
             }
             6 => {
-                let source = get_read_operand_at(&opcodes, ip, 1);
-                if source == 0 {
-                    ip = source.try_into().expect("invalid jump address");
-                } else {
-                    ip += 2;
+                let (comparison, target) = get_operands_2(&opcodes, &mut ip);
+                if comparison == 0 {
+                    ip = target.try_into().expect("invalid jump address");
                 }
             }
             7 => {
@@ -90,6 +86,15 @@ fn get_operands_3(opcodes: &[isize], ip: &mut usize) -> (isize, isize, usize) {
     *ip += 4;
 
     (source1, source2, destination)
+}
+
+fn get_operands_2(opcodes: &[isize], ip: &mut usize) -> (isize, isize) {
+    let source1 = get_read_operand_at(opcodes, *ip, 1);
+    let source2 = get_read_operand_at(opcodes, *ip, 2);
+
+    *ip += 3;
+
+    (source1, source2)
 }
 
 fn get_read_operand_at(opcodes: &[isize], ip: usize, idx: usize) -> isize {
