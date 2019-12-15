@@ -7,7 +7,8 @@ fn do_main(path: &str) {
     let program = intcode::parse_opcodes(&input);
 
     let max_output = find_max(&program);
-    println!("Maximum output reached: {}", max_output)
+    println!("Maximum output reached: {}", max_output);
+    assert_eq!(max_output, 440880);
 }
 
 fn run_thrusters(program: &[isize], phase_settings: &[isize]) -> isize {
@@ -61,5 +62,10 @@ mod test {
         ];
         assert_eq!(run_thrusters(&prog, &[1, 0, 4, 3, 2]), 65210);
         assert_eq!(find_max(&prog), 65210);
+    }
+
+    #[test]
+    fn main() {
+        do_main("../inputs/day_07.txt");
     }
 }
