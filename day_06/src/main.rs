@@ -34,6 +34,7 @@ fn make_graph(input: &str) -> Node {
         .expect("root was not found in nodes");
     // Since this is the root, the refcount of root_node should be exactly 1 -- no other node is pointing at it.
     Rc::try_unwrap(root_node)
+        .ok() // throw away the "Err", which is probably a circular reference that is unprintable
         .expect("unexpected reference in the bagging area")
         .into_inner()
 }
@@ -71,5 +72,17 @@ K)L
 ",
         );
         assert_eq!(super::count_all_orbits(&root), 42);
+    }
+
+    #[test]
+    fn circular_graph() {
+        let caught = std::panic::catch_unwind(|| super::make_graph("A)B\nB)A\n"));
+        assert_eq!(
+            caught
+                .unwrap_err()
+                .downcast_ref::<String>()
+                .expect("should have panicked with a String"),
+            "unexpected reference in the bagging area"
+        );
     }
 }
