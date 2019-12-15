@@ -25,10 +25,8 @@ fn run_thrusters(program: &[isize], phase_settings: &[isize]) -> isize {
 fn find_max(program: &[isize]) -> isize {
     use itertools::Itertools;
 
-    let phase_iterators: Vec<std::ops::RangeInclusive<isize>> = (0..5).map(|_| 0..=4).collect();
-
     let mut max_output = None;
-    for phase_settings in phase_iterators.into_iter().multi_cartesian_product() {
+    for phase_settings in (0..=4).permutations(5) {
         let output = run_thrusters(program, &phase_settings);
         if max_output.is_none() || output > max_output.unwrap() {
             max_output = Some(output);
