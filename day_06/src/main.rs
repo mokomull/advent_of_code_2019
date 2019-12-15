@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::Rc;
 
 fn main() {
@@ -12,11 +13,34 @@ fn do_main(path: &str) {
     let count = count_all_orbits(&root);
     println!("Found {} orbits", count);
     assert_eq!(count, 273985);
+
+    let root = Rc::new(RefCell::new(root));
+    let path_to_you = find_path(&root, "YOU").expect("no path to YOU found");
+    let path_to_san = find_path(&root, "SAN").expect("no path to SAN found");
+    let count = count_uncommon_path_components(path_to_you, path_to_san);
+    println!(
+        "YOU would have to move {} times to become a sibling of SAN",
+        count
+    );
+    assert_eq!(count, 460);
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Node {
+    name: String,
     children: Vec<Rc<RefCell<Node>>>,
+}
+
+fn get_or_create<'a, 'b>(
+    nodes: &'a mut std::collections::HashMap<String, Rc<RefCell<Node>>>,
+    name: &'b str,
+) -> &'a mut Rc<RefCell<Node>> {
+    nodes.entry(name.to_owned()).or_insert_with(|| {
+        Rc::new(RefCell::new(Node {
+            name: name.to_owned(),
+            children: vec![],
+        }))
+    })
 }
 
 fn make_graph(input: &str) -> Node {
@@ -29,8 +53,8 @@ fn make_graph(input: &str) -> Node {
         let orbiter = tokens.next().expect("malformed input");
         assert!(tokens.next().is_none());
 
-        let orbiter_node = nodes.entry(orbiter.to_owned()).or_default().clone();
-        let mut node = nodes.entry(center.to_owned()).or_default().borrow_mut();
+        let orbiter_node = get_or_create(&mut nodes, orbiter).clone();
+        let mut node = get_or_create(&mut nodes, center).borrow_mut();
         node.children.push(orbiter_node);
     }
 
@@ -70,6 +94,33 @@ fn count_all_orbits(root: &Node) -> usize {
     count_children(root, 0)
 }
 
+fn find_path(root: &Rc<RefCell<Node>>, target: &str) -> Option<VecDeque<Rc<RefCell<Node>>>> {
+    if root.borrow().name == target {
+        return Some(vec![].into());
+    }
+
+    for c in &root.borrow().children {
+        if let Some(mut path) = find_path(c, target) {
+            path.push_front(root.clone());
+            return Some(path);
+        }
+    }
+
+    None
+}
+
+fn count_uncommon_path_components(
+    mut a: VecDeque<Rc<RefCell<Node>>>,
+    mut b: VecDeque<Rc<RefCell<Node>>>,
+) -> usize {
+    while !a.is_empty() && !b.is_empty() && Rc::ptr_eq(a.front().unwrap(), b.front().unwrap()) {
+        a.pop_front();
+        b.pop_front();
+    }
+
+    a.len() + b.len()
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -101,6 +152,36 @@ K)L
                 .expect("should have panicked with a String"),
             "root was not found in nodes"
         );
+    }
+
+    #[test]
+    fn find_path() {
+        use super::*;
+        let root = Rc::new(RefCell::new(make_graph(
+            "COM)B
+B)C
+C)D
+D)E
+E)F
+B)G
+G)H
+D)I
+E)J
+J)K
+K)L
+K)YOU
+I)SAN
+",
+        )));
+        let path_to_you = find_path(&root, "YOU").expect("did not find a path to YOU");
+        let names_to_you: Vec<_> = path_to_you
+            .iter()
+            .map(|node| node.borrow().name.clone())
+            .collect();
+        assert_eq!(names_to_you, vec!["COM", "B", "C", "D", "E", "J", "K"]);
+
+        let path_to_san = find_path(&root, "SAN").expect("did not find a path to SAN");
+        assert_eq!(count_uncommon_path_components(path_to_you, path_to_san), 4);
     }
 
     #[test]
