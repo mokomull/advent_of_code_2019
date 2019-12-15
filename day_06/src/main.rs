@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 fn main() {
@@ -6,11 +7,11 @@ fn main() {
 
 #[derive(Debug, Default)]
 struct Node {
-    children: Vec<Rc<Node>>,
+    children: Vec<Rc<RefCell<Node>>>,
 }
 
 fn make_graph(input: &str) -> Node {
-    let mut nodes = std::collections::HashMap::<String, Rc<Node>>::new();
+    let mut nodes = std::collections::HashMap::<String, Rc<RefCell<Node>>>::new();
     let mut root_name = "".to_owned();
 
     for line in input.lines() {
@@ -24,15 +25,17 @@ fn make_graph(input: &str) -> Node {
         }
 
         let orbiter_node = nodes.entry(orbiter.to_owned()).or_default().clone();
-        let node = nodes.entry(center.to_owned()).or_default();
-        Rc::get_mut(node)
-            .expect("unintended reference to a node")
-            .children
-            .push(orbiter_node);
+        let mut node = nodes.entry(center.to_owned()).or_default().borrow_mut();
+        node.children.push(orbiter_node);
     }
 
-    Rc::try_unwrap(nodes.get(&root_name).expect("root not found").clone())
-        .expect("couldn't unwrap out of the hashmap")
+    let root_node = nodes
+        .remove(&root_name)
+        .expect("root was not found in nodes");
+    // Since this is the root, the refcount of root_node should be exactly 1 -- no other node is pointing at it.
+    Rc::try_unwrap(root_node)
+        .expect("unexpected reference in the bagging area")
+        .into_inner()
 }
 
 fn count_all_orbits(root: &Node) -> usize {
