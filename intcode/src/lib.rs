@@ -42,6 +42,38 @@ pub fn run_with_io(
                 output.push(source);
                 ip += 2;
             }
+            5 => {
+                let source = get_read_operand_at(&opcodes, ip, 1);
+                if source != 0 {
+                    ip = source.try_into().expect("invalid jump address");
+                } else {
+                    ip += 2;
+                }
+            }
+            6 => {
+                let source = get_read_operand_at(&opcodes, ip, 1);
+                if source == 0 {
+                    ip = source.try_into().expect("invalid jump address");
+                } else {
+                    ip += 2;
+                }
+            }
+            7 => {
+                let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
+                if source1 < source2 {
+                    opcodes[destination] = 1;
+                } else {
+                    opcodes[destination] = 0;
+                }
+            }
+            8 => {
+                let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
+                if source1 == source2 {
+                    opcodes[destination] = 1;
+                } else {
+                    opcodes[destination] = 0;
+                }
+            }
             99 => break,
             x => panic!("unexpected opcode found in position {}: {}", ip, x),
         }
