@@ -9,6 +9,10 @@ fn do_main(path: &str) {
     let max_output = find_max(&program);
     println!("Maximum output reached: {}", max_output);
     assert_eq!(max_output, 440880);
+
+    let max_output = find_max_loop(&program);
+    println!("Maximum output with cyclic feedback: {}", max_output);
+    assert_eq!(max_output, 3745599);
 }
 
 fn run_thrusters(program: &[isize], phase_settings: &[isize]) -> isize {
@@ -94,6 +98,20 @@ fn run_thrusters_loop(program: &[isize], phase_settings: &[isize]) -> isize {
     futures::executor::block_on(f)
 }
 
+fn find_max_loop(program: &[isize]) -> isize {
+    use itertools::Itertools;
+
+    let mut max_output = None;
+    for phase_settings in (5..=9).permutations(5) {
+        let output = run_thrusters_loop(program, &phase_settings);
+        if max_output.is_none() || output > max_output.unwrap() {
+            max_output = Some(output);
+        }
+    }
+
+    max_output.expect("did not produce any output")
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -128,6 +146,7 @@ mod test {
             28, 1005, 28, 6, 99, 0, 0, 5,
         ];
         assert_eq!(run_thrusters_loop(&prog, &[9, 8, 7, 6, 5]), 139629729);
+        assert_eq!(find_max_loop(&prog), 139629729);
 
         let prog = [
             3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54,
@@ -135,6 +154,7 @@ mod test {
             53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
         ];
         assert_eq!(run_thrusters_loop(&prog, &[9, 7, 8, 5, 6]), 18216);
+        assert_eq!(find_max_loop(&prog), 18216);
     }
 
     #[test]
