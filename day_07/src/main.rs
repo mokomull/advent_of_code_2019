@@ -61,6 +61,9 @@ fn run_thrusters_loop(program: &[isize], phase_settings: &[isize]) -> isize {
     let f = async {
         let mut read_thruster = 0;
         let mut write_thruster = 1;
+        let mut finished = 0;
+        let mut last_output = None;
+
         loop {
             read_thruster %= thrusters.len();
             write_thruster %= thrusters.len();
@@ -68,12 +71,19 @@ fn run_thrusters_loop(program: &[isize], phase_settings: &[isize]) -> isize {
             let data = thrusters[read_thruster].1.next().await;
 
             match data.expect("didn't get data") {
-                Status::Output(o) => thrusters[write_thruster]
-                    .0
-                    .send(o)
-                    .await
-                    .expect("could not send to the next thruster"),
-                Status::Terminated(_) => unimplemented!(),
+                Status::Output(o) => {
+                    thrusters[write_thruster]
+                        .0
+                        .send(o)
+                        .await
+                        .expect("could not send to the next thruster");
+                    last_output = Some(o);
+                }
+                Status::Terminated(_) => finished += 1,
+            }
+
+            if finished == thrusters.len() {
+                break last_output.expect("never received any output");
             }
 
             read_thruster += 1;
@@ -81,7 +91,7 @@ fn run_thrusters_loop(program: &[isize], phase_settings: &[isize]) -> isize {
         }
     };
 
-    unimplemented!()
+    futures::executor::block_on(f)
 }
 
 #[cfg(test)]
@@ -109,6 +119,22 @@ mod test {
         ];
         assert_eq!(run_thrusters(&prog, &[1, 0, 4, 3, 2]), 65210);
         assert_eq!(find_max(&prog), 65210);
+    }
+
+    #[test]
+    fn loop_thrusters() {
+        let prog = [
+            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
+            28, 1005, 28, 6, 99, 0, 0, 5,
+        ];
+        assert_eq!(run_thrusters_loop(&prog, &[9, 8, 7, 6, 5]), 139629729);
+
+        let prog = [
+            3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54,
+            -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4,
+            53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
+        ];
+        assert_eq!(run_thrusters_loop(&prog, &[9, 7, 8, 5, 6]), 18216);
     }
 
     #[test]
