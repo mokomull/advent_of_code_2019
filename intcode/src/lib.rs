@@ -1,6 +1,14 @@
 use std::collections::VecDeque;
 use std::convert::TryInto;
 
+use futures::{Stream, StreamExt};
+
+#[derive(Debug)]
+pub enum Status {
+    Terminated(Vec<isize>),
+    Output(isize),
+}
+
 pub fn parse_opcodes(input: &str) -> Vec<isize> {
     input
         .trim()
@@ -15,12 +23,51 @@ pub fn run(opcodes: Vec<isize>) -> Vec<isize> {
 }
 
 // Returns (memory, output)
-pub fn run_with_io(
-    mut opcodes: Vec<isize>,
-    mut input: VecDeque<isize>,
-) -> (Vec<isize>, Vec<isize>) {
-    let mut ip = 0;
+pub fn run_with_io(opcodes: Vec<isize>, input: VecDeque<isize>) -> (Vec<isize>, Vec<isize>) {
+    let status = stream_with_io(opcodes, Box::new(futures::stream::iter(input)));
+
     let mut output = Vec::new();
+    let mut memory = Vec::new();
+
+    for s in futures::executor::block_on_stream(Box::pin(status)) {
+        match s {
+            Status::Terminated(x) => memory = x,
+            Status::Output(x) => output.push(x),
+        }
+    }
+
+    (memory, output)
+}
+
+pub fn stream_with_io(
+    opcodes: Vec<isize>,
+    input: Box<dyn Stream<Item = isize> + Unpin>,
+) -> impl Stream<Item = Status> + Unpin {
+    Box::pin(futures::stream::unfold(
+        (opcodes, input, 0, false),
+        next_opcode,
+    ))
+}
+
+async fn next_opcode(
+    (mut opcodes, mut input, mut ip, done): (
+        Vec<isize>,
+        Box<dyn Stream<Item = isize> + Unpin>,
+        usize,
+        bool,
+    ),
+) -> Option<(
+    Status,
+    ((
+        Vec<isize>,
+        Box<dyn Stream<Item = isize> + Unpin>,
+        usize,
+        bool,
+    )),
+)> {
+    if done {
+        return None;
+    }
 
     loop {
         match opcodes[ip] % 100 {
@@ -34,13 +81,12 @@ pub fn run_with_io(
             }
             3 => {
                 let destination = get_write_index_at(&opcodes, ip, 1);
-                opcodes[destination] = input.pop_front().expect("insufficient input provided");
+                opcodes[destination] = input.next().await.expect("insufficient input provided");
                 ip += 2;
             }
             4 => {
                 let source = get_read_operand_at(&opcodes, ip, 1);
-                output.push(source);
-                ip += 2;
+                return Some((Status::Output(source), (opcodes, input, ip + 2, false)));
             }
             5 => {
                 let (comparison, target) = get_operands_2(&opcodes, &mut ip);
@@ -70,12 +116,10 @@ pub fn run_with_io(
                     opcodes[destination] = 0;
                 }
             }
-            99 => break,
+            99 => return Some((Status::Terminated(opcodes), (vec![], input, ip, true))),
             x => panic!("unexpected opcode found in position {}: {}", ip, x),
         }
     }
-
-    (opcodes, output)
 }
 
 fn get_operands_3(opcodes: &[isize], ip: &mut usize) -> (isize, isize, usize) {
