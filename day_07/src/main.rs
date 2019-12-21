@@ -37,6 +37,53 @@ fn find_max(program: &[isize]) -> isize {
     max_output.expect("did not produce any output")
 }
 
+fn run_thrusters_loop(program: &[isize], phase_settings: &[isize]) -> isize {
+    use futures::sink::SinkExt;
+    use futures::stream::StreamExt;
+    use intcode::Status;
+
+    let mut thrusters = Vec::new();
+    for &setting in phase_settings {
+        let (mut sender, receiver) = futures::channel::mpsc::channel::<isize>(2);
+        sender
+            .try_send(setting)
+            .expect("could not send phase setting");
+        thrusters.push((
+            sender,
+            intcode::stream_with_io(program.into(), Box::new(receiver)),
+        ))
+    }
+    thrusters[0]
+        .0
+        .try_send(0)
+        .expect("could not start thruster 0");
+
+    let f = async {
+        let mut read_thruster = 0;
+        let mut write_thruster = 1;
+        loop {
+            read_thruster %= thrusters.len();
+            write_thruster %= thrusters.len();
+
+            let data = thrusters[read_thruster].1.next().await;
+
+            match data.expect("didn't get data") {
+                Status::Output(o) => thrusters[write_thruster]
+                    .0
+                    .send(o)
+                    .await
+                    .expect("could not send to the next thruster"),
+                Status::Terminated(_) => unimplemented!(),
+            }
+
+            read_thruster += 1;
+            write_thruster += 1;
+        }
+    };
+
+    unimplemented!()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

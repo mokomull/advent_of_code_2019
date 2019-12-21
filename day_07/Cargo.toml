@@ -9,3 +9,8 @@ edition = "2018"
 [dependencies]
 intcode = { path = "../intcode" }
 itertools = "^0.8.2"
+
+[dependencies.futures]
+version = "^0.3"
+default_features = false
+features = ["std", "executor"]

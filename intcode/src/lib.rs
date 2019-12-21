@@ -42,15 +42,28 @@ pub fn run_with_io(opcodes: Vec<isize>, input: VecDeque<isize>) -> (Vec<isize>, 
 pub fn stream_with_io(
     opcodes: Vec<isize>,
     input: Box<dyn Stream<Item = isize> + Unpin>,
-) -> impl Stream<Item = Status> {
-    futures::stream::unfold((opcodes, input, 0, false), next_opcode)
+) -> impl Stream<Item = Status> + Unpin {
+    Box::pin(futures::stream::unfold(
+        (opcodes, input, 0, false),
+        next_opcode,
+    ))
 }
 
 async fn next_opcode(
-    (mut opcodes, mut input, mut ip, done): (Vec<isize>, Box<dyn Stream<Item = isize> + Unpin>, usize, bool),
+    (mut opcodes, mut input, mut ip, done): (
+        Vec<isize>,
+        Box<dyn Stream<Item = isize> + Unpin>,
+        usize,
+        bool,
+    ),
 ) -> Option<(
     Status,
-    ((Vec<isize>, Box<dyn Stream<Item = isize> + Unpin>, usize, bool)),
+    ((
+        Vec<isize>,
+        Box<dyn Stream<Item = isize> + Unpin>,
+        usize,
+        bool,
+    )),
 )> {
     if done {
         return None;
