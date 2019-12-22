@@ -10,14 +10,39 @@ fn do_main<T: std::io::Read>(input: T) {
     reader
         .read_line(&mut line)
         .expect("could not read a line from input");
+    let layers = split_into_layers(line.trim().as_bytes(), 25, 6);
 
-    let mut layers = split_into_layers(line.trim().as_bytes(), 25, 6);
-    layers.sort_by_key(|l| l.iter().filter(|&&pixel| pixel == b'0').count());
-    let layer = layers.first().expect("somehow there were no layers");
+    let mut layers_sorted_by_number_of_0s = layers.clone();
+    layers_sorted_by_number_of_0s.sort_by_key(|l| l.iter().filter(|&&pixel| pixel == b'0').count());
+    let layer = layers_sorted_by_number_of_0s
+        .first()
+        .expect("somehow there were no layers");
     let ones = layer.iter().filter(|&&pixel| pixel == b'1').count();
     let twos = layer.iter().filter(|&&pixel| pixel == b'2').count();
     println!("# of ones * # of twos is {}", ones * twos);
     assert_eq!(ones * twos, 2210);
+
+    let mut layer = layers[0].clone();
+    for lower_layer in layers.iter().skip(1) {
+        for i in 0..layer.len() {
+            if layer[i] == b'2'
+            /* transparent */
+            {
+                layer[i] = lower_layer[i];
+            }
+        }
+    }
+
+    for row in 0..6 {
+        for col in 0..25 {
+            match layer[row * 25 + col] {
+                b'0' => print!(" "),
+                b'1' => print!("#"),
+                x => panic!("Unknown pixel {} at {}, {}", x, row, col),
+            }
+        }
+        println!("");
+    }
 }
 
 fn split_into_layers(pixels: &[u8], width: usize, height: usize) -> Vec<Vec<u8>> {
