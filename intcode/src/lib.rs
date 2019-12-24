@@ -198,7 +198,7 @@ fn get_write_index_at(
     opcodes: &mut Vec<isize>,
     ip: usize,
     idx: usize,
-    relative_base: isize,
+    _relative_base: isize,
 ) -> usize {
     let destination_idx = opcodes[ip + idx];
     let index = match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
