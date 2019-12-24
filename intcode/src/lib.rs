@@ -310,5 +310,17 @@ mod tests {
         ];
         let (_, output) = super::run_with_io(prog.clone(), vec![].into());
         assert_eq!(prog, output);
+
+        let prog = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
+        let (_, output) = super::run_with_io(prog, vec![].into());
+        assert_eq!(output.len(), 1);
+        /* "should output a 16-digit number" */
+        assert!(output[0] >= 1000_0000_0000_0000);
+        assert!(output[0] <= 9999_9999_9999_9999);
+
+        let prog = vec![104, 1125899906842624, 99];
+        let (_, output) = super::run_with_io(prog.clone(), vec![].into());
+        /* "should output the large number in the middle" */
+        assert_eq!(output, vec![prog[1]]);
     }
 }
