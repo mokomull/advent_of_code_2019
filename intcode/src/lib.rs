@@ -198,11 +198,14 @@ fn get_write_index_at(
     opcodes: &mut Vec<isize>,
     ip: usize,
     idx: usize,
-    _relative_base: isize,
+    relative_base: isize,
 ) -> usize {
     let destination_idx = opcodes[ip + idx];
     let index = match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
         0 => destination_idx
+            .try_into()
+            .expect("un-indexable memory offset"),
+        2 => (destination_idx + relative_base)
             .try_into()
             .expect("un-indexable memory offset"),
         x => panic!("Invalid destination parameter mode {} at ip {}", x, ip),
