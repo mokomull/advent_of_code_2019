@@ -4,7 +4,11 @@ fn main() {
 
 fn do_main(input: &str) {
     let opcodes = intcode::parse_opcodes(input);
-    let (_, output) = intcode::run_with_io(opcodes, vec![1].into());
+    let (_, output) = intcode::run_with_io(opcodes.clone(), vec![1].into());
     assert_eq!(output.len(), 1);
     println!("BOOST keycode: {}", output[0]);
+
+    let (_, output) = intcode::run_with_io(opcodes, vec![2].into());
+    assert_eq!(output.len(), 1);
+    println!("Coordinates: {}", output[0]);
 }
