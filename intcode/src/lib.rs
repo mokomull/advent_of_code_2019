@@ -184,7 +184,12 @@ fn get_read_operand_at(
             opcodes[source_idx]
         }
         1 => source_idx,
-        2 => source_idx + relative_base,
+        2 => {
+            let source_idx: usize = (source_idx + relative_base)
+                .try_into()
+                .expect("un-indexable memory offset");
+            opcodes[source_idx]
+        }
         x => panic!("Invalid parameter mode {} at ip {}", x, ip),
     }
 }
