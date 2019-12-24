@@ -44,16 +44,17 @@ pub fn stream_with_io(
     input: Box<dyn Stream<Item = isize> + Unpin>,
 ) -> impl Stream<Item = Status> + Unpin {
     Box::pin(futures::stream::unfold(
-        (opcodes, input, 0, false),
+        (opcodes, input, 0, 0, false),
         next_opcode,
     ))
 }
 
 async fn next_opcode(
-    (mut opcodes, mut input, mut ip, done): (
+    (mut opcodes, mut input, mut ip, mut relative_base, done): (
         Vec<isize>,
         Box<dyn Stream<Item = isize> + Unpin>,
         usize,
+        isize,
         bool,
     ),
 ) -> Option<(
@@ -62,6 +63,7 @@ async fn next_opcode(
         Vec<isize>,
         Box<dyn Stream<Item = isize> + Unpin>,
         usize,
+        isize,
         bool,
     )),
 )> {
@@ -72,36 +74,42 @@ async fn next_opcode(
     loop {
         match opcodes[ip] % 100 {
             1 => {
-                let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
+                let (source1, source2, destination) =
+                    get_operands_3(&opcodes, &mut ip, relative_base);
                 opcodes[destination] = source1 + source2;
             }
             2 => {
-                let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
+                let (source1, source2, destination) =
+                    get_operands_3(&opcodes, &mut ip, relative_base);
                 opcodes[destination] = source1 * source2;
             }
             3 => {
-                let destination = get_write_index_at(&opcodes, ip, 1);
+                let destination = get_write_index_at(&opcodes, ip, 1, relative_base);
                 opcodes[destination] = input.next().await.expect("insufficient input provided");
                 ip += 2;
             }
             4 => {
-                let source = get_read_operand_at(&opcodes, ip, 1);
-                return Some((Status::Output(source), (opcodes, input, ip + 2, false)));
+                let source = get_read_operand_at(&opcodes, ip, 1, relative_base);
+                return Some((
+                    Status::Output(source),
+                    (opcodes, input, ip + 2, relative_base, false),
+                ));
             }
             5 => {
-                let (comparison, target) = get_operands_2(&opcodes, &mut ip);
+                let (comparison, target) = get_operands_2(&opcodes, &mut ip, relative_base);
                 if comparison != 0 {
                     ip = target.try_into().expect("invalid jump address");
                 }
             }
             6 => {
-                let (comparison, target) = get_operands_2(&opcodes, &mut ip);
+                let (comparison, target) = get_operands_2(&opcodes, &mut ip, relative_base);
                 if comparison == 0 {
                     ip = target.try_into().expect("invalid jump address");
                 }
             }
             7 => {
-                let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
+                let (source1, source2, destination) =
+                    get_operands_3(&opcodes, &mut ip, relative_base);
                 if source1 < source2 {
                     opcodes[destination] = 1;
                 } else {
@@ -109,39 +117,54 @@ async fn next_opcode(
                 }
             }
             8 => {
-                let (source1, source2, destination) = get_operands_3(&opcodes, &mut ip);
+                let (source1, source2, destination) =
+                    get_operands_3(&opcodes, &mut ip, relative_base);
                 if source1 == source2 {
                     opcodes[destination] = 1;
                 } else {
                     opcodes[destination] = 0;
                 }
             }
-            99 => return Some((Status::Terminated(opcodes), (vec![], input, ip, true))),
+            9 => {
+                let source = get_read_operand_at(&opcodes, ip, 1, relative_base);
+                relative_base += source;
+                ip += 2;
+            }
+            99 => {
+                return Some((
+                    Status::Terminated(opcodes),
+                    (vec![], input, ip, relative_base, true),
+                ))
+            }
             x => panic!("unexpected opcode found in position {}: {}", ip, x),
         }
     }
 }
 
-fn get_operands_3(opcodes: &[isize], ip: &mut usize) -> (isize, isize, usize) {
-    let source1 = get_read_operand_at(opcodes, *ip, 1);
-    let source2 = get_read_operand_at(opcodes, *ip, 2);
-    let destination = get_write_index_at(opcodes, *ip, 3);
+fn get_operands_3(
+    opcodes: &[isize],
+    ip: &mut usize,
+    relative_base: isize,
+) -> (isize, isize, usize) {
+    let source1 = get_read_operand_at(opcodes, *ip, 1, relative_base);
+    let source2 = get_read_operand_at(opcodes, *ip, 2, relative_base);
+    let destination = get_write_index_at(opcodes, *ip, 3, relative_base);
 
     *ip += 4;
 
     (source1, source2, destination)
 }
 
-fn get_operands_2(opcodes: &[isize], ip: &mut usize) -> (isize, isize) {
-    let source1 = get_read_operand_at(opcodes, *ip, 1);
-    let source2 = get_read_operand_at(opcodes, *ip, 2);
+fn get_operands_2(opcodes: &[isize], ip: &mut usize, relative_base: isize) -> (isize, isize) {
+    let source1 = get_read_operand_at(opcodes, *ip, 1, relative_base);
+    let source2 = get_read_operand_at(opcodes, *ip, 2, relative_base);
 
     *ip += 3;
 
     (source1, source2)
 }
 
-fn get_read_operand_at(opcodes: &[isize], ip: usize, idx: usize) -> isize {
+fn get_read_operand_at(opcodes: &[isize], ip: usize, idx: usize, relative_base: isize) -> isize {
     let source_idx = opcodes[ip + idx];
     match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
         0 => {
@@ -149,11 +172,12 @@ fn get_read_operand_at(opcodes: &[isize], ip: usize, idx: usize) -> isize {
             opcodes[source_idx]
         }
         1 => source_idx,
+        2 => source_idx + relative_base,
         x => panic!("Invalid parameter mode {} at ip {}", x, ip),
     }
 }
 
-fn get_write_index_at(opcodes: &[isize], ip: usize, idx: usize) -> usize {
+fn get_write_index_at(opcodes: &[isize], ip: usize, idx: usize, relative_base: isize) -> usize {
     let destination_idx = opcodes[ip + idx];
     match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
         0 => destination_idx
@@ -251,5 +275,14 @@ mod tests {
         assert_eq!(super::run_with_io(prog.clone(), vec![0].into()).1, vec![0]);
         assert_eq!(super::run_with_io(prog.clone(), vec![1].into()).1, vec![1]);
         assert_eq!(super::run_with_io(prog.clone(), vec![-1].into()).1, vec![1]);
+    }
+
+    #[test]
+    fn relative_base() {
+        let prog = vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+        let (_, output) = super::run_with_io(prog.clone(), vec![].into());
+        assert_eq!(prog, output);
     }
 }
