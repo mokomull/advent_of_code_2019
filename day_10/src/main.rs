@@ -26,7 +26,7 @@ impl TryFrom<&str> for Map {
             }
             asteroids.push(row);
         }
-        
+
         Ok(Map { asteroids })
     }
 }
@@ -42,6 +42,8 @@ mod test {
 #####
 ....#
 ...##
-".try_into().expect("could not parse map");
+"
+        .try_into()
+        .expect("could not parse map");
     }
 }
