@@ -1,7 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 
 fn main() {
-    println!("Hello, world!");
+    do_main(&std::fs::read_to_string("inputs/day_10.txt").expect("could not read input"));
+}
+
+fn do_main(input: &str) {
+    let map: Map = input.try_into().expect("could not parse input");
+    println!("Most asteroids visible: {}", map.most_visible());
+    assert_eq!(map.most_visible(), 230);
 }
 
 struct Map {
@@ -200,5 +206,10 @@ mod test {
         .try_into()
         .unwrap();
         assert_eq!(map.most_visible(), 210);
+    }
+
+    #[test]
+    fn main() {
+        do_main(&std::fs::read_to_string("../inputs/day_10.txt").unwrap());
     }
 }
