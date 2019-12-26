@@ -61,7 +61,7 @@ impl Map {
 
         let (mut x, mut y) = (x1 as isize, y1 as isize);
 
-        while (x, y) != (x2 as isize, y2 as isize) {
+        while (x, y) != (x2 as isize - dx, y2 as isize - dy) {
             x += dx;
             y += dy;
 
