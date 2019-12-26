@@ -51,21 +51,21 @@ impl Map {
     }
 
     fn can_see(&self, x1: usize, y1: usize, x2: usize, y2: usize) -> bool {
-        let dx = x2 - x1;
-        let dy = y2 - y1;
+        let dx = x2 as isize - x1 as isize;
+        let dy = y2 as isize - y1 as isize;
 
         // step by the minimal rise/run that will reach (2) from (1)
-        let factor = gcd(dx, dy);
-        let dx = dx / factor;
-        let dy = dy / factor;
+        let factor = gcd(dx.abs() as usize, dy.abs() as usize);
+        let dx = dx / factor as isize;
+        let dy = dy / factor as isize;
 
-        let (mut x, mut y) = (x1, y1);
+        let (mut x, mut y) = (x1 as isize, y1 as isize);
 
-        while (x, y) != (x2, y2) {
+        while (x, y) != (x2 as isize, y2 as isize) {
             x += dx;
             y += dy;
 
-            if self.contains_asteroid(x, y) {
+            if self.contains_asteroid(x as usize, y as usize) {
                 return false;
             }
         }
