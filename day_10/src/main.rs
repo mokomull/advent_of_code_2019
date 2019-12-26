@@ -6,8 +6,8 @@ fn main() {
 
 fn do_main(input: &str) {
     let map: Map = input.try_into().expect("could not parse input");
-    println!("Most asteroids visible: {}", map.most_visible());
-    assert_eq!(map.most_visible(), 230);
+    println!("Most asteroids visible: {}", map.most_visible().0);
+    assert_eq!(map.most_visible().0, 230);
 }
 
 struct Map {
@@ -72,12 +72,17 @@ impl Map {
         count
     }
 
-    pub fn most_visible(&self) -> usize {
+    pub fn most_visible(&self) -> (usize, (usize, usize)) {
         self.asteroids()
             .into_iter()
-            .map(|(x, y)| self.count_from(x, y))
+            .map(|(x, y)| (self.count_from(x, y), (x, y)))
             .max()
             .expect("no asteroids were found")
+    }
+
+    pub fn nth_zapped(&self, n: usize) -> (usize, usize) {
+        dbg!(self.most_visible());
+        unimplemented!()
     }
 
     fn can_see(&self, x1: usize, y1: usize, x2: usize, y2: usize) -> bool {
@@ -136,7 +141,7 @@ mod test {
         assert!(map.can_see(3, 4, 4, 0));
         assert!(map.can_see(4, 0, 3, 4));
         assert_eq!(map.count_from(3, 4), 8);
-        assert_eq!(map.most_visible(), 8);
+        assert_eq!(map.most_visible().0, 8);
 
         let map: Map = "......#.#.
 #..#.#....
@@ -151,7 +156,7 @@ mod test {
 "
         .try_into()
         .unwrap();
-        assert_eq!(map.most_visible(), 33);
+        assert_eq!(map.most_visible().0, 33);
 
         let map: Map = "#.#...#.#.
 .###....#.
@@ -166,7 +171,7 @@ mod test {
 "
         .try_into()
         .unwrap();
-        assert_eq!(map.most_visible(), 35);
+        assert_eq!(map.most_visible().0, 35);
 
         let map: Map = ".#..#..###
 ####.###.#
@@ -180,7 +185,7 @@ mod test {
 .....#.#.."
             .try_into()
             .unwrap();
-        assert_eq!(map.most_visible(), 41);
+        assert_eq!(map.most_visible().0, 41);
 
         let map: Map = ".#..##.###...#######
 ##.############..##.
@@ -205,7 +210,20 @@ mod test {
 "
         .try_into()
         .unwrap();
-        assert_eq!(map.most_visible(), 210);
+        assert_eq!(map.most_visible().0, 210);
+    }
+
+    #[test]
+    fn zapping() {
+        let map: Map = ".#....#####...#..
+##...##.#####..##
+##...#...#.#####.
+..#.....#...###..
+..#.#.....#....##
+"
+        .try_into()
+        .unwrap();
+        assert_eq!(map.nth_zapped(1), (8, 1));
     }
 
     #[test]
