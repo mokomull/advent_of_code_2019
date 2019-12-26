@@ -51,8 +51,8 @@ impl Map {
     }
 
     fn can_see(&self, x1: usize, y1: usize, x2: usize, y2: usize) -> bool {
-        let dx = x1 - x2;
-        let dy = y1 - y2;
+        let dx = x2 - x1;
+        let dy = y2 - y1;
 
         // step by the minimal rise/run that will reach (2) from (1)
         let factor = gcd(dx, dy);
