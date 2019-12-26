@@ -50,6 +50,30 @@ impl Map {
         asteroid_vec
     }
 
+    pub fn count_from(&self, x: usize, y: usize) -> usize {
+        let mut count = 0;
+
+        for (x2, y2) in self.asteroids() {
+            if (x, y) == (x2, y2) {
+                continue;
+            }
+
+            if self.can_see(x, y, x2, y2) {
+                count += 1;
+            }
+        }
+
+        count
+    }
+
+    pub fn most_visible(&self) -> usize {
+        self.asteroids()
+            .into_iter()
+            .map(|(x, y)| self.count_from(x, y))
+            .max()
+            .expect("no asteroids were found")
+    }
+
     fn can_see(&self, x1: usize, y1: usize, x2: usize, y2: usize) -> bool {
         let dx = x2 as isize - x1 as isize;
         let dy = y2 as isize - y1 as isize;
@@ -105,5 +129,7 @@ mod test {
         assert!(!map.can_see(1, 0, 3, 4));
         assert!(map.can_see(3, 4, 4, 0));
         assert!(map.can_see(4, 0, 3, 4));
+        assert_eq!(map.count_from(3, 4), 8);
+        assert_eq!(map.most_visible(), 8);
     }
 }
