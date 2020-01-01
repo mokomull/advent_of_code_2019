@@ -81,7 +81,10 @@ impl Map {
     }
 
     pub fn nth_zapped(&self, n: usize) -> (usize, usize) {
-        dbg!(self.most_visible());
+        let (_, (x, y)) = self.most_visible();
+        let mut map = self.clone();
+        let mut asteroids: Vec<_> = self.asteroids().into_iter().collect();
+        asteroids.sort_by_key(|&(x2, y2)| Rational::new(x2 as isize - x as isize, y2 as isize - y as isize));
         unimplemented!()
     }
 
@@ -106,6 +109,28 @@ impl Map {
         }
 
         true
+    }
+}
+
+#[derive(PartialEq)]
+struct Rational {
+    dx: isize,
+    dy: isize,
+}
+
+impl Rational {
+    pub fn new(dx: isize, dy: isize) -> Self {
+        let factor = gcd(dx.abs() as usize, dy.abs() as usize);
+        Self {
+            dx: dx / factor as isize,
+            dy: dy / factor as isize,
+        }
+    }
+}
+
+impl std::cmp::PartialOrd for Rational {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        
     }
 }
 
