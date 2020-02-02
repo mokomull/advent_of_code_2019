@@ -311,6 +311,12 @@ mod test {
     }
 
     #[test]
+    fn rational_cmp() {
+        assert!(Rational::new(1, 1) == Rational::new(2, 2));
+        assert!(Rational::new(2, 2) < Rational::new(-2, -2));
+    }
+
+    #[test]
     fn main() {
         do_main(&std::fs::read_to_string("../inputs/day_10.txt").unwrap());
     }
