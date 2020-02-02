@@ -83,8 +83,14 @@ impl Map {
     pub fn nth_zapped(&self, n: usize) -> (usize, usize) {
         let (_, (x, y)) = self.most_visible();
         let mut map = self.clone();
-        let mut asteroids: Vec<_> = self.asteroids().into_iter().collect();
-        asteroids.sort_by_key(|&(x2, y2)| Rational::new(x2 as isize - x as isize, y2 as isize - y as isize));
+        let mut asteroids: Vec<_> = self
+            .asteroids()
+            .into_iter()
+            .filter(|&(x2, y2)| (x2, y2) != (x, y))
+            .collect();
+        asteroids.sort_by_key(|&(x2, y2)| {
+            Rational::new(x2 as isize - x as isize, y2 as isize - y as isize)
+        });
         unimplemented!()
     }
 
