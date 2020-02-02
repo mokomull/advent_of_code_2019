@@ -112,7 +112,7 @@ impl Map {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Eq, PartialEq)]
 struct Rational {
     dx: isize,
     dy: isize,
@@ -120,17 +120,67 @@ struct Rational {
 
 impl Rational {
     pub fn new(dx: isize, dy: isize) -> Self {
-        let factor = gcd(dx.abs() as usize, dy.abs() as usize);
-        Self {
-            dx: dx / factor as isize,
-            dy: dy / factor as isize,
+        let mut factor = gcd(dx.abs() as usize, dy.abs() as usize) as isize;
+        /* ensure we always have a positive dx */
+        if dx < 0 {
+            factor *= -1;
         }
+        Self {
+            dx: dx / factor,
+            dy: dy / factor,
+        }
+    }
+}
+
+impl std::cmp::Ord for Rational {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.dx == other.dx && self.dy == other.dy {
+            return std::cmp::Ordering::Equal;
+        }
+
+        // Anything on the the left-side of the origin is "clockwise" of anything on the right half.
+        if self.dx < 0 && other.dx > 0 {
+            return std::cmp::Ordering::Greater;
+        } else if self.dx > 0 && other.dx < 0 {
+            return std::cmp::Ordering::Less;
+        }
+
+        // Anything directly above the origin is "counter-clockwise" of everything
+        if self.dx == 0 && self.dy < 0 {
+            return std::cmp::Ordering::Less;
+        }
+        if other.dx == 0 && other.dy < 0 {
+            return std::cmp::Ordering::Greater;
+        }
+
+        // Anything directly below the origin is "clockwise" of the right side, and "counter-clockwise" of the left side
+        if self.dx == 0 {
+            if other.dx > 0 {
+                return std::cmp::Ordering::Greater;
+            } else {
+                return std::cmp::Ordering::Less;
+            }
+        }
+        if other.dx == 0 {
+            if self.dx > 0 {
+                return std::cmp::Ordering::Less;
+            } else {
+                return std::cmp::Ordering::Greater;
+            }
+        }
+
+        // Otherwise, we're in the same half-plane.  Within the half-plane, dy/dx increases, from -\infty to 0 to \infty.
+        // Since we made dx positive in Rational::new, we can turn dy1/dx1 <?> dy2/dx2 into dy1 * dx2 <?> dy2 * dx1.
+        if self.dy * other.dx < other.dy * self.dx {
+            return std::cmp::Ordering::Less;
+        }
+        std::cmp::Ordering::Greater
     }
 }
 
 impl std::cmp::PartialOrd for Rational {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        
+        return Some(std::cmp::Ord::cmp(self, other));
     }
 }
 
