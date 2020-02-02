@@ -89,7 +89,10 @@ impl Map {
             .filter(|&(x2, y2)| (x2, y2) != (x, y))
             .collect();
         asteroids.sort_by_key(|&(x2, y2)| {
-            Rational::new(x2 as isize - x as isize, y2 as isize - y as isize)
+            let dx = x2 as isize - x as isize;
+            let dy = y2 as isize - y as isize;
+            // Sort by "clockwise", then sort the same angle closest-first
+            (Rational::new(dx, dy), dy.abs())
         });
         unimplemented!()
     }
