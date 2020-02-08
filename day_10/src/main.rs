@@ -129,11 +129,7 @@ struct Rational {
 
 impl Rational {
     pub fn new(dx: isize, dy: isize) -> Self {
-        let mut factor = gcd(dx.abs() as usize, dy.abs() as usize) as isize;
-        /* ensure we always have a positive dx */
-        if dx < 0 {
-            factor *= -1;
-        }
+        let factor = gcd(dx.abs() as usize, dy.abs() as usize) as isize;
         Self {
             dx: dx / factor,
             dy: dy / factor,
@@ -178,8 +174,10 @@ impl std::cmp::Ord for Rational {
             }
         }
 
-        // Otherwise, we're in the same half-plane.  Within the half-plane, dy/dx increases, from -\infty to 0 to \infty.
-        // Since we made dx positive in Rational::new, we can turn dy1/dx1 <?> dy2/dx2 into dy1 * dx2 <?> dy2 * dx1.
+        // Otherwise, we're in the same half-plane.  Within the half-plane, dy/dx increases, from
+        // -\infty to 0 to \infty.  Since the sign of self.dx is the same as the sign as other.dx,
+        // we can turn dy1/dx1 <?> dy2/dx2 into dy1 * dx2 <?> dy2 * dx1 -- we're effectively
+        // multiplying both sides by dx1 * dx2, which is always positive.
         if self.dy * other.dx < other.dy * self.dx {
             return std::cmp::Ordering::Less;
         }
