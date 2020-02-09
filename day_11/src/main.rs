@@ -54,6 +54,8 @@ async fn paint_panels(
     let mut panels = HashMap::<(isize, isize), isize>::new();
     let mut intcode = intcode::stream_with_io(program.iter().cloned().collect(), Box::new(rx));
 
+    panels.insert((0, 0), first_panel_color);
+
     loop {
         let this_color = *panels.get(&(x, y)).unwrap_or(&0);
         tx.try_send(this_color)
