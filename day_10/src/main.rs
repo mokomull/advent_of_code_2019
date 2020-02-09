@@ -8,6 +8,14 @@ fn do_main(input: &str) {
     let map: Map = input.try_into().expect("could not parse input");
     println!("Most asteroids visible: {}", map.most_visible().0);
     assert_eq!(map.most_visible().0, 230);
+
+    let two_hundredth = map.nth_zapped(200);
+    println!(
+        "200th zapped is {:?}, resulting in {}",
+        two_hundredth,
+        two_hundredth.0 * 100 + two_hundredth.1
+    );
+    assert_eq!(two_hundredth, (12, 5));
 }
 
 struct Map {
