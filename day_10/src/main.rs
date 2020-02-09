@@ -97,9 +97,11 @@ impl Map {
         let mut last_zapped = None;
 
         for _ in 0..n {
-            last_zapped = Some(asteroids
-                .pop_front()
-                .expect("no more asteroids can be zapped"));
+            last_zapped = Some(
+                asteroids
+                    .pop_front()
+                    .expect("no more asteroids can be zapped"),
+            );
             while !asteroids.is_empty()
                 && Rational::new(
                     asteroids.front().unwrap().0 as isize - x as isize,
@@ -327,6 +329,42 @@ mod test {
         .try_into()
         .unwrap();
         assert_eq!(map.nth_zapped(1), (8, 1));
+
+        let map: Map = ".#..##.###...#######
+##.############..##.
+.#.######.########.#
+.###.#######.####.#.
+#####.##.#.##.###.##
+..#####..#.#########
+####################
+#.####....###.#.#.##
+##.#################
+#####.##.###..####..
+..######..##.#######
+####.##.####...##..#
+.#####..#.######.###
+##...#.##########...
+#.##########.#######
+.####.#.###.###.#.##
+....##.##.###..#####
+.#.#.###########.###
+#.#.#.#####.####.###
+###.##.####.##.#..##
+"
+        .try_into()
+        .unwrap();
+
+        assert_eq!(map.nth_zapped(1), (11, 12));
+        assert_eq!(map.nth_zapped(2), (12, 1));
+        assert_eq!(map.nth_zapped(3), (12, 2));
+        assert_eq!(map.nth_zapped(10), (12, 8));
+        assert_eq!(map.nth_zapped(20), (16, 0));
+        assert_eq!(map.nth_zapped(50), (16, 9));
+        assert_eq!(map.nth_zapped(100), (10, 16));
+        assert_eq!(map.nth_zapped(199), (9, 6));
+        assert_eq!(map.nth_zapped(200), (8, 2));
+        assert_eq!(map.nth_zapped(201), (10, 9));
+        assert_eq!(map.nth_zapped(299), (11, 1));
     }
 
     #[test]
