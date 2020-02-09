@@ -1,4 +1,5 @@
 use futures::stream::StreamExt;
+use std::collections::HashMap;
 
 fn main() {
     do_main("inputs/day_11.txt");
@@ -7,16 +8,24 @@ fn main() {
 fn do_main(path: &str) {
     let program =
         intcode::parse_opcodes(&std::fs::read_to_string(path).expect("could not read input"));
-    let painted_panels = futures::executor::block_on(count_painted_panels(&program));
+    let painted_panels = count_painted_panels(&program);
     println!("The robot painted {} panels", painted_panels);
     assert_eq!(painted_panels, 1732);
 }
 
-async fn count_painted_panels(program: &[isize]) -> usize {
+fn count_painted_panels(program: &[isize]) -> usize {
+    let panels = futures::executor::block_on(paint_panels(program, 0));
+    panels.len()
+}
+
+async fn paint_panels(
+    program: &[isize],
+    first_panel_color: isize,
+) -> HashMap<(isize, isize), isize> {
     let (mut tx, rx) = futures::channel::mpsc::channel::<isize>(1);
     let (mut x, mut y) = (0, 0);
     let (mut dx, mut dy) = (0, -1); // originally pointed *up*
-    let mut panels = std::collections::HashMap::<(isize, isize), isize>::new();
+    let mut panels = HashMap::<(isize, isize), isize>::new();
     let mut intcode = intcode::stream_with_io(program.iter().cloned().collect(), Box::new(rx));
 
     loop {
@@ -58,7 +67,7 @@ async fn count_painted_panels(program: &[isize]) -> usize {
         intcode = rest;
     }
 
-    panels.len()
+    panels
 }
 
 #[cfg(test)]
