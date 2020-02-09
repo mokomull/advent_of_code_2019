@@ -11,11 +11,37 @@ fn do_main(path: &str) {
     let painted_panels = count_painted_panels(&program);
     println!("The robot painted {} panels", painted_panels);
     assert_eq!(painted_panels, 1732);
+
+    print_painted_panels(&program);
 }
 
 fn count_painted_panels(program: &[isize]) -> usize {
     let panels = futures::executor::block_on(paint_panels(program, 0));
     panels.len()
+}
+
+fn print_painted_panels(program: &[isize]) {
+    let panels = futures::executor::block_on(paint_panels(program, 1));
+    let min_x = panels
+        .keys()
+        .map(|&(x, _)| x)
+        .min()
+        .expect("no panels were painted");
+    let max_x = panels.keys().map(|&(x, _)| x).max().unwrap();
+    let min_y = panels.keys().map(|&(_, y)| y).min().unwrap();
+    let max_y = panels.keys().map(|&(_, y)| y).max().unwrap();
+
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            let c = match panels.get(&(x, y)) {
+                Some(0) | None => '.',
+                Some(1) => '#',
+                x => panic!("Unexpected color: {:?}", x),
+            };
+            print!("{}", c);
+        }
+        println!();
+    }
 }
 
 async fn paint_panels(
