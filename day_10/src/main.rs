@@ -102,15 +102,17 @@ impl Map {
                     .pop_front()
                     .expect("no more asteroids can be zapped"),
             );
-            while !asteroids.is_empty()
-                && Rational::new(
+            for _ in 0..asteroids.len() {
+                if Rational::new(
                     asteroids.front().unwrap().0 as isize - x as isize,
                     asteroids.front().unwrap().1 as isize - y as isize,
-                ) == Rational::new(
+                ) != Rational::new(
                     last_zapped.unwrap().0 as isize - x as isize,
                     last_zapped.unwrap().1 as isize - y as isize,
-                )
-            {
+                ) {
+                    break;
+                }
+
                 // Move all of the asteroids that were shadowed by last_zapped to the back of the queue.
                 let to_move = asteroids.pop_front().unwrap();
                 asteroids.push_back(to_move);
