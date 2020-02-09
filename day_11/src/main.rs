@@ -9,6 +9,7 @@ fn do_main(path: &str) {
         intcode::parse_opcodes(&std::fs::read_to_string(path).expect("could not read input"));
     let painted_panels = futures::executor::block_on(count_painted_panels(&program));
     println!("The robot painted {} panels", painted_panels);
+    assert_eq!(painted_panels, 1732);
 }
 
 async fn count_painted_panels(program: &[isize]) -> usize {
@@ -58,4 +59,12 @@ async fn count_painted_panels(program: &[isize]) -> usize {
     }
 
     panels.len()
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_main() {
+        super::do_main("../inputs/day_11.txt");
+    }
 }
