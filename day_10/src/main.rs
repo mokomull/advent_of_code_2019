@@ -82,7 +82,6 @@ impl Map {
 
     pub fn nth_zapped(&self, n: usize) -> (usize, usize) {
         let (_, (x, y)) = self.most_visible();
-        let mut map = self.clone();
         let mut asteroids: Vec<_> = self
             .asteroids()
             .into_iter()
@@ -94,7 +93,29 @@ impl Map {
             // Sort by "clockwise", then sort the same angle closest-first
             (Rational::new(dx, dy), dy.abs())
         });
-        unimplemented!()
+        let mut asteroids: std::collections::VecDeque<_> = asteroids.into();
+        let mut last_zapped = None;
+
+        for _ in 0..n {
+            last_zapped = Some(asteroids
+                .pop_front()
+                .expect("no more asteroids can be zapped"));
+            while !asteroids.is_empty()
+                && Rational::new(
+                    asteroids.front().unwrap().0 as isize - x as isize,
+                    asteroids.front().unwrap().1 as isize - y as isize,
+                ) == Rational::new(
+                    last_zapped.unwrap().0 as isize - x as isize,
+                    last_zapped.unwrap().1 as isize - y as isize,
+                )
+            {
+                // Move all of the asteroids that were shadowed by last_zapped to the back of the queue.
+                let to_move = asteroids.pop_front().unwrap();
+                asteroids.push_back(to_move);
+            }
+        }
+
+        last_zapped.expect("did not zap any asteroids")
     }
 
     fn can_see(&self, x1: usize, y1: usize, x2: usize, y2: usize) -> bool {
