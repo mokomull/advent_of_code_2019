@@ -74,15 +74,15 @@ async fn paint_panels(
         let (new_dx, new_dy) = match direction.expect("intcode program did not yield enough data") {
             intcode::Status::Output(0) => {
                 // turn left:
-                // [ 0 -1    * ( dx
-                //   1  0 ]      dy )
-                (-dy, dx)
-            }
-            intcode::Status::Output(1) => {
-                // turn right:
                 // [  0 1    * ( dx
                 //   -1 0 ]      dy )
                 (dy, -dx)
+            }
+            intcode::Status::Output(1) => {
+                // turn right:
+                // [ 0 -1    * ( dx
+                //   1  0 ]      dy )
+                (-dy, dx)
             }
             x => panic!("Unexpected direction: {:?}", x),
         };
