@@ -83,10 +83,9 @@ fn do_main(input: &str) {
         step(&mut moons);
     }
 
-    println!(
-        "Total energy is {}",
-        moons.iter().map(Moon::energy).sum::<isize>()
-    );
+    let energy = moons.iter().map(Moon::energy).sum::<isize>();
+    println!("Total energy is {}", energy);
+    assert_eq!(energy, 8454);
 }
 
 fn step(moons: &mut Vec<Moon>) {
@@ -209,5 +208,12 @@ mod test {
                 vel_z: -2
             }
         );
+    }
+
+    #[test]
+    fn main() {
+        super::do_main(
+            &std::fs::read_to_string("../inputs/day_12.txt").expect("could not read input"),
+        )
     }
 }
