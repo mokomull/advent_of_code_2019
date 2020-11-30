@@ -48,6 +48,12 @@ impl Moon {
         helper(&mut self.vel_y, self.y, other.y);
         helper(&mut self.vel_z, self.z, other.z);
     }
+
+    fn apply_velocity(&mut self) {
+        self.x += self.vel_x;
+        self.y += self.vel_y;
+        self.z += self.vel_z;
+    }
 }
 
 fn main() {
