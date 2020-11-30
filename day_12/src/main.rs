@@ -84,27 +84,31 @@ fn do_main(input: &str) {
         .collect();
 
     for _ in 0..1000 {
-        for i in 0..moons.len() {
-            for j in 0..moons.len() {
-                if i > j {
-                    let (left, right) = moons.split_at_mut(i);
-                    right[0].apply_gravity(&left[j]);
-                } else if i < j {
-                    let (left, right) = moons.split_at_mut(j);
-                    left[i].apply_gravity(&right[0]);
-                }
-            }
-        }
-
-        for moon in &mut moons {
-            moon.apply_velocity();
-        }
+        step(&mut moons);
     }
 
     println!(
         "Total energy is {}",
         moons.iter().map(Moon::energy).sum::<isize>()
     );
+}
+
+fn step(moons: &mut Vec<Moon>) {
+    for i in 0..moons.len() {
+        for j in 0..moons.len() {
+            if i > j {
+                let (left, right) = moons.split_at_mut(i);
+                right[0].apply_gravity(&left[j]);
+            } else if i < j {
+                let (left, right) = moons.split_at_mut(j);
+                left[i].apply_gravity(&right[0]);
+            }
+        }
+    }
+
+    for moon in moons {
+        moon.apply_velocity();
+    }
 }
 
 #[cfg(test)]
@@ -171,5 +175,43 @@ mod test {
                 vel_z: 0,
             }
         )
+    }
+
+    #[test]
+    fn step() {
+        let mut moons = vec![
+            Moon::new(-1, 0, 2),
+            Moon::new(2, -10, -7),
+            Moon::new(4, -8, 8),
+            Moon::new(3, 5, -1),
+        ];
+
+        super::step(&mut moons);
+
+        assert_eq!(
+            moons[0],
+            Moon {
+                x: 2,
+                y: -1,
+                z: 1,
+                vel_x: 3,
+                vel_y: -1,
+                vel_z: -1
+            }
+        );
+
+        super::step(&mut moons);
+
+        assert_eq!(
+            moons[0],
+            Moon {
+                x: 5,
+                y: -3,
+                z: -1,
+                vel_x: 3,
+                vel_y: -2,
+                vel_z: -2
+            }
+        );
     }
 }
