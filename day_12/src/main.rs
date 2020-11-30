@@ -60,12 +60,8 @@ impl Moon {
     }
 
     fn energy(&self) -> isize {
-        self.x.abs()
-            + self.y.abs()
-            + self.z.abs()
-            + self.vel_x.abs()
-            + self.vel_y.abs()
-            + self.vel_z.abs()
+        (self.x.abs() + self.y.abs() + self.z.abs())
+            * (self.vel_x.abs() + self.vel_y.abs() + self.vel_z.abs())
     }
 }
 
