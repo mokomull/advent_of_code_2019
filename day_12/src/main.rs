@@ -8,6 +8,9 @@ struct Moon {
     x: isize,
     y: isize,
     z: isize,
+    vel_x: isize,
+    vel_y: isize,
+    vel_z: isize,
 }
 
 impl TryFrom<&str> for Moon {
@@ -25,7 +28,25 @@ impl TryFrom<&str> for Moon {
             x: get_int(1)?,
             y: get_int(2)?,
             z: get_int(3)?,
+            vel_x: 0,
+            vel_y: 0,
+            vel_z: 0,
         })
+    }
+}
+
+impl Moon {
+    fn apply_gravity(&mut self, other: &Moon) {
+        fn helper(velocity: &mut isize, coord: isize, other: isize) {
+            if coord > other {
+                *velocity -= 1;
+            } else if coord < other {
+                *velocity += 1;
+            }
+        }
+        helper(&mut self.vel_x, self.x, other.x);
+        helper(&mut self.vel_y, self.y, other.y);
+        helper(&mut self.vel_z, self.z, other.z);
     }
 }
 
@@ -41,19 +62,61 @@ mod test {
     fn parser() {
         assert_eq!(
             Moon::try_from("<x=-1, y=0, z=2>"),
-            Ok(Moon { x: -1, y: 0, z: 2 })
+            Ok(Moon {
+                x: -1,
+                y: 0,
+                z: 2,
+                vel_x: 0,
+                vel_y: 0,
+                vel_z: 0
+            })
         );
         assert_eq!(
             Moon::try_from("<x=2, y=-10, z=-7>"),
             Ok(Moon {
                 x: 2,
                 y: -10,
-                z: -7
+                z: -7,
+                vel_x: 0,
+                vel_y: 0,
+                vel_z: 0
             })
         );
         /*
         <x=4, y=-8, z=8>
         <x=3, y=5, z=-1>
         */
+    }
+
+    #[test]
+    fn gravity() {
+        let mut moon1 = Moon::try_from("<x=-1, y=0, z=2>").unwrap();
+        let mut moon2 = Moon::try_from("<x=2, y=-10, z=2>").unwrap();
+
+        moon1.apply_gravity(&moon2);
+        moon2.apply_gravity(&moon1);
+
+        assert_eq!(
+            moon1,
+            Moon {
+                x: -1,
+                y: 0,
+                z: 2,
+                vel_x: 1,
+                vel_y: -1,
+                vel_z: 0,
+            }
+        );
+        assert_eq!(
+            moon2,
+            Moon {
+                x: 2,
+                y: -10,
+                z: 2,
+                vel_x: -1,
+                vel_y: 1,
+                vel_z: 0,
+            }
+        )
     }
 }
