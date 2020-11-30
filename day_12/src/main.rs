@@ -24,18 +24,22 @@ impl TryFrom<&str> for Moon {
 
         let captures = RE.captures(input).ok_or(())?;
         let get_int = |i: usize| captures.get(i).unwrap().as_str().parse().or(Err(()));
-        Ok(Moon {
-            x: get_int(1)?,
-            y: get_int(2)?,
-            z: get_int(3)?,
-            vel_x: 0,
-            vel_y: 0,
-            vel_z: 0,
-        })
+        Ok(Moon::new(get_int(1)?, get_int(2)?, get_int(3)?))
     }
 }
 
 impl Moon {
+    fn new(x: isize, y: isize, z: isize) -> Moon {
+        Moon {
+            x,
+            y,
+            z,
+            vel_x: 0,
+            vel_y: 0,
+            vel_z: 0,
+        }
+    }
+
     fn apply_gravity(&mut self, other: &Moon) {
         fn helper(velocity: &mut isize, coord: isize, other: isize) {
             if coord > other {
