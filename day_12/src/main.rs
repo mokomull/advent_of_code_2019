@@ -54,6 +54,15 @@ impl Moon {
         self.y += self.vel_y;
         self.z += self.vel_z;
     }
+
+    fn energy(&self) -> isize {
+        self.x.abs()
+            + self.y.abs()
+            + self.z.abs()
+            + self.vel_x.abs()
+            + self.vel_y.abs()
+            + self.vel_z.abs()
+    }
 }
 
 fn main() {
@@ -70,15 +79,28 @@ fn do_main(input: &str) {
         })
         .collect();
 
-    for i in 0..moons.len() {
-        for j in 0..moons.len() {
-            moons[i].apply_gravity(&moons[j]);
+    for _ in 0..1000 {
+        for i in 0..moons.len() {
+            for j in 0..moons.len() {
+                if i > j {
+                    let (left, right) = moons.split_at_mut(i);
+                    right[0].apply_gravity(&left[j]);
+                } else if i < j {
+                    let (left, right) = moons.split_at_mut(j);
+                    left[i].apply_gravity(&right[0]);
+                }
+            }
+        }
+
+        for moon in &mut moons {
+            moon.apply_velocity();
         }
     }
 
-    for mut moon in moons {
-        moon.apply_velocity();
-    }
+    println!(
+        "Total energy is {}",
+        moons.iter().map(Moon::energy).sum::<isize>()
+    );
 }
 
 #[cfg(test)]
