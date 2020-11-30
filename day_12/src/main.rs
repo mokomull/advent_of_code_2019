@@ -57,7 +57,28 @@ impl Moon {
 }
 
 fn main() {
-    println!("Hello, world!");
+    do_main(&std::fs::read_to_string("inputs/day_12.txt").expect("could not read input"));
+}
+
+fn do_main(input: &str) {
+    use std::io::BufRead;
+    let mut moons: Vec<_> = std::io::Cursor::new(input)
+        .lines()
+        .map(|l| {
+            let line = l.unwrap();
+            Moon::try_from(line.as_str()).expect(&format!("could not parse {:?}", line))
+        })
+        .collect();
+
+    for i in 0..moons.len() {
+        for j in 0..moons.len() {
+            moons[i].apply_gravity(&moons[j]);
+        }
+    }
+
+    for mut moon in moons {
+        moon.apply_velocity();
+    }
 }
 
 #[cfg(test)]
