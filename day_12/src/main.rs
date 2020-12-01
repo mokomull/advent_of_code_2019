@@ -5,12 +5,15 @@ use regex::Regex;
 
 #[derive(Debug, PartialEq)]
 struct Moon {
-    x: isize,
-    y: isize,
-    z: isize,
-    vel_x: isize,
-    vel_y: isize,
-    vel_z: isize,
+    x: Dimension,
+    y: Dimension,
+    z: Dimension,
+}
+
+#[derive(Debug, PartialEq)]
+struct Dimension {
+    pos: isize,
+    vel: isize,
 }
 
 impl TryFrom<&str> for Moon {
@@ -30,38 +33,49 @@ impl TryFrom<&str> for Moon {
 
 impl Moon {
     fn new(x: isize, y: isize, z: isize) -> Moon {
+        Moon::new_with_vel(x, y, z, 0, 0, 0)
+    }
+
+    fn new_with_vel(
+        x: isize,
+        y: isize,
+        z: isize,
+        vel_x: isize,
+        vel_y: isize,
+        vel_z: isize,
+    ) -> Moon {
         Moon {
-            x,
-            y,
-            z,
-            vel_x: 0,
-            vel_y: 0,
-            vel_z: 0,
+            x: Dimension { pos: x, vel: vel_x },
+            y: Dimension { pos: y, vel: vel_y },
+            z: Dimension { pos: z, vel: vel_z },
         }
     }
 
     fn apply_gravity(&mut self, other: &Moon) {
-        fn helper(velocity: &mut isize, coord: isize, other: isize) {
-            if coord > other {
-                *velocity -= 1;
-            } else if coord < other {
-                *velocity += 1;
-            }
-        }
-        helper(&mut self.vel_x, self.x, other.x);
-        helper(&mut self.vel_y, self.y, other.y);
-        helper(&mut self.vel_z, self.z, other.z);
+        self.x.apply_gravity(&other.x);
+        self.y.apply_gravity(&other.y);
+        self.z.apply_gravity(&other.z);
     }
 
     fn apply_velocity(&mut self) {
-        self.x += self.vel_x;
-        self.y += self.vel_y;
-        self.z += self.vel_z;
+        self.x.pos += self.x.vel;
+        self.y.pos += self.y.vel;
+        self.z.pos += self.z.vel;
     }
 
     fn energy(&self) -> isize {
-        (self.x.abs() + self.y.abs() + self.z.abs())
-            * (self.vel_x.abs() + self.vel_y.abs() + self.vel_z.abs())
+        (self.x.pos.abs() + self.y.pos.abs() + self.z.pos.abs())
+            * (self.x.vel.abs() + self.y.vel.abs() + self.z.vel.abs())
+    }
+}
+
+impl Dimension {
+    fn apply_gravity(&mut self, other: &Dimension) {
+        if self.pos > other.pos {
+            self.vel -= 1;
+        } else if self.pos < other.pos {
+            self.vel += 1;
+        }
     }
 }
 
@@ -112,27 +126,10 @@ mod test {
 
     #[test]
     fn parser() {
-        assert_eq!(
-            Moon::try_from("<x=-1, y=0, z=2>"),
-            Ok(Moon {
-                x: -1,
-                y: 0,
-                z: 2,
-                vel_x: 0,
-                vel_y: 0,
-                vel_z: 0
-            })
-        );
+        assert_eq!(Moon::try_from("<x=-1, y=0, z=2>"), Ok(Moon::new(-1, 0, 2)));
         assert_eq!(
             Moon::try_from("<x=2, y=-10, z=-7>"),
-            Ok(Moon {
-                x: 2,
-                y: -10,
-                z: -7,
-                vel_x: 0,
-                vel_y: 0,
-                vel_z: 0
-            })
+            Ok(Moon::new(2, -10, -7))
         );
         /*
         <x=4, y=-8, z=8>
@@ -148,28 +145,8 @@ mod test {
         moon1.apply_gravity(&moon2);
         moon2.apply_gravity(&moon1);
 
-        assert_eq!(
-            moon1,
-            Moon {
-                x: -1,
-                y: 0,
-                z: 2,
-                vel_x: 1,
-                vel_y: -1,
-                vel_z: 0,
-            }
-        );
-        assert_eq!(
-            moon2,
-            Moon {
-                x: 2,
-                y: -10,
-                z: 2,
-                vel_x: -1,
-                vel_y: 1,
-                vel_z: 0,
-            }
-        )
+        assert_eq!(moon1, Moon::new_with_vel(-1, 0, 2, 1, -1, 0));
+        assert_eq!(moon2, Moon::new_with_vel(2, -10, 2, -1, 1, 0))
     }
 
     #[test]
@@ -183,31 +160,11 @@ mod test {
 
         super::step(&mut moons);
 
-        assert_eq!(
-            moons[0],
-            Moon {
-                x: 2,
-                y: -1,
-                z: 1,
-                vel_x: 3,
-                vel_y: -1,
-                vel_z: -1
-            }
-        );
+        assert_eq!(moons[0], Moon::new_with_vel(2, -1, 1, 3, -1, -1));
 
         super::step(&mut moons);
 
-        assert_eq!(
-            moons[0],
-            Moon {
-                x: 5,
-                y: -3,
-                z: -1,
-                vel_x: 3,
-                vel_y: -2,
-                vel_z: -2
-            }
-        );
+        assert_eq!(moons[0], Moon::new_with_vel(5, -3, -1, 3, -2, -2));
     }
 
     #[test]
