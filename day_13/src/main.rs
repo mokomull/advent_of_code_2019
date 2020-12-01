@@ -44,7 +44,7 @@ async fn count_block_tiles(program: Vec<isize>) -> usize {
         intcode = rest;
     }
 
-    tiles.iter().filter(|(&k, &v)| v == 2 /* block */).count()
+    tiles.iter().filter(|(_, &v)| v == 2 /* block */).count()
 }
 
 #[cfg(test)]
