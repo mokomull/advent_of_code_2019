@@ -10,6 +10,7 @@ fn do_main(path: &str) {
 
     let block_tiles = futures::executor::block_on(count_block_tiles(program));
     println!("Block tiles: {}", block_tiles);
+    assert_eq!(block_tiles, 309);
 }
 
 async fn count_block_tiles(program: Vec<isize>) -> usize {
@@ -44,4 +45,12 @@ async fn count_block_tiles(program: Vec<isize>) -> usize {
     }
 
     tiles.iter().filter(|(&k, &v)| v == 2 /* block */).count()
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn main() {
+        super::do_main("../inputs/day_13.txt");
+    }
 }
