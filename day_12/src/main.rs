@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Moon {
     x: isize,
     y: isize,
@@ -79,26 +79,13 @@ fn do_main(input: &str) {
         })
         .collect();
 
-    let mut one_thousandth = vec![];
-    let mut states = std::collections::HashSet::new();
-    let mut which = 0;
-    for i in 1u64.. {
+    for _ in 0..1000 {
         step(&mut moons);
-        if i == 1000 {
-            one_thousandth = moons.clone();
-        }
-
-        if !states.insert(moons.clone()) {
-            which = i;
-            break;
-        }
     }
 
-    let energy = one_thousandth.iter().map(Moon::energy).sum::<isize>();
+    let energy = moons.iter().map(Moon::energy).sum::<isize>();
     println!("Total energy is {}", energy);
     assert_eq!(energy, 8454);
-
-    println!("Found a duplicate state on iteration {}", which);
 }
 
 fn step(moons: &mut Vec<Moon>) {
