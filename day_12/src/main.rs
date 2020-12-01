@@ -1,9 +1,10 @@
 use std::convert::TryFrom;
 
 use lazy_static::lazy_static;
+use num::Integer;
 use regex::Regex;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 struct Moon {
     x: isize,
     y: isize,
@@ -79,13 +80,48 @@ fn do_main(input: &str) {
         })
         .collect();
 
-    for _ in 0..1000 {
+    let mut one_thousandth = vec![];
+    let mut x_states = std::collections::HashSet::new();
+    let mut y_states = std::collections::HashSet::new();
+    let mut z_states = std::collections::HashSet::new();
+    let mut x_which = None;
+    let mut y_which = None;
+    let mut z_which = None;
+    for i in 0u64.. {
         step(&mut moons);
+        if i == 999 {
+            one_thousandth = moons.clone();
+        }
+
+        if x_which.is_none()
+            && !x_states.insert(moons.iter().map(|m| (m.x, m.vel_x)).collect::<Vec<_>>())
+        {
+            x_which = Some(i);
+        }
+        if y_which.is_none()
+            && !y_states.insert(moons.iter().map(|m| (m.y, m.vel_y)).collect::<Vec<_>>())
+        {
+            y_which = Some(i);
+        }
+        if z_which.is_none()
+            && !z_states.insert(moons.iter().map(|m| (m.z, m.vel_z)).collect::<Vec<_>>())
+        {
+            z_which = Some(i);
+        }
+
+        if x_which.is_some() && y_which.is_some() && z_which.is_some() {
+            break;
+        }
     }
 
-    let energy = moons.iter().map(Moon::energy).sum::<isize>();
+    let energy = one_thousandth.iter().map(Moon::energy).sum::<isize>();
     println!("Total energy is {}", energy);
     assert_eq!(energy, 8454);
+
+    let (x, y, z) = (x_which.unwrap(), y_which.unwrap(), z_which.unwrap());
+    let whole_loop = x.lcm(&y).lcm(&z);
+    println!("Found a duplicate state on iteration {}", whole_loop);
+    assert_eq!(whole_loop, 362336016722948);
 }
 
 fn step(moons: &mut Vec<Moon>) {
