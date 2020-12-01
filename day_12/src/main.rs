@@ -87,9 +87,9 @@ fn do_main(input: &str) {
     let mut x_which = None;
     let mut y_which = None;
     let mut z_which = None;
-    for i in 1u64.. {
+    for i in 0u64.. {
         step(&mut moons);
-        if i == 1000 {
+        if i == 999 {
             one_thousandth = moons.clone();
         }
 
