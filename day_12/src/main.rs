@@ -80,16 +80,35 @@ fn do_main(input: &str) {
         .collect();
 
     let mut one_thousandth = vec![];
-    let mut states = std::collections::HashSet::new();
-    let mut which = 0;
+    let mut x_states = std::collections::HashSet::new();
+    let mut y_states = std::collections::HashSet::new();
+    let mut z_states = std::collections::HashSet::new();
+    let mut x_which = None;
+    let mut y_which = None;
+    let mut z_which = None;
     for i in 1u64.. {
         step(&mut moons);
         if i == 1000 {
             one_thousandth = moons.clone();
         }
 
-        if !states.insert(moons.clone()) {
-            which = i;
+        if x_which.is_none()
+            && !x_states.insert(moons.iter().map(|m| (m.x, m.vel_x)).collect::<Vec<_>>())
+        {
+            x_which = Some(i);
+        }
+        if y_which.is_none()
+            && !y_states.insert(moons.iter().map(|m| (m.y, m.vel_y)).collect::<Vec<_>>())
+        {
+            y_which = Some(i);
+        }
+        if z_which.is_none()
+            && !z_states.insert(moons.iter().map(|m| (m.z, m.vel_z)).collect::<Vec<_>>())
+        {
+            z_which = Some(i);
+        }
+
+        if x_which.is_some() && y_which.is_some() && z_which.is_some() {
             break;
         }
     }
@@ -98,7 +117,10 @@ fn do_main(input: &str) {
     println!("Total energy is {}", energy);
     assert_eq!(energy, 8454);
 
-    println!("Found a duplicate state on iteration {}", which);
+    println!(
+        "Found a duplicate state on iteration {:?}",
+        (x_which, y_which, z_which)
+    );
 }
 
 fn step(moons: &mut Vec<Moon>) {
