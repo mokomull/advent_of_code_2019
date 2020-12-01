@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 
+use gcd::Gcd;
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -117,10 +118,10 @@ fn do_main(input: &str) {
     println!("Total energy is {}", energy);
     assert_eq!(energy, 8454);
 
-    println!(
-        "Found a duplicate state on iteration {:?}",
-        (x_which, y_which, z_which)
-    );
+    let (x, y, z) = (x_which.unwrap(), y_which.unwrap(), z_which.unwrap());
+    let whole_loop = x * y / x.gcd(y) * z / y.gcd(z) / x.gcd(z);
+
+    println!("Found a duplicate state on iteration {}", whole_loop);
 }
 
 fn step(moons: &mut Vec<Moon>) {
