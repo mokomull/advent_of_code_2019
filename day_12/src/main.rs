@@ -121,6 +121,7 @@ fn do_main(input: &str) {
     let (x, y, z) = (x_which.unwrap(), y_which.unwrap(), z_which.unwrap());
     let whole_loop = x.lcm(&y).lcm(&z);
     println!("Found a duplicate state on iteration {}", whole_loop);
+    assert_eq!(whole_loop, 362336016722948);
 }
 
 fn step(moons: &mut Vec<Moon>) {
