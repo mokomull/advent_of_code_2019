@@ -39,77 +39,78 @@ pub fn run_with_io(opcodes: Vec<isize>, input: VecDeque<isize>) -> (Vec<isize>, 
     (memory, output)
 }
 
+struct InterpreterState {
+    opcodes: Vec<isize>,
+    input: Box<dyn Stream<Item = isize> + Unpin>,
+    ip: usize,
+    relative_base: isize,
+    done: bool,
+}
+
 pub fn stream_with_io(
     opcodes: Vec<isize>,
     input: Box<dyn Stream<Item = isize> + Unpin>,
 ) -> impl Stream<Item = Status> + Unpin {
     Box::pin(futures::stream::unfold(
-        (opcodes, input, 0, 0, false),
+        InterpreterState {
+            opcodes,
+            input,
+            ip: 0,
+            relative_base: 0,
+            done: false,
+        },
         next_opcode,
     ))
 }
 
-async fn next_opcode(
-    (mut opcodes, mut input, mut ip, mut relative_base, done): (
-        Vec<isize>,
-        Box<dyn Stream<Item = isize> + Unpin>,
-        usize,
-        isize,
-        bool,
-    ),
-) -> Option<(
-    Status,
-    (
-        Vec<isize>,
-        Box<dyn Stream<Item = isize> + Unpin>,
-        usize,
-        isize,
-        bool,
-    ),
-)> {
-    if done {
+async fn next_opcode(mut state: InterpreterState) -> Option<(Status, InterpreterState)> {
+    if state.done {
         return None;
     }
 
     loop {
-        match opcodes[ip] % 100 {
+        let opcodes = &mut state.opcodes;
+        let ip = &mut state.ip;
+        match opcodes[*ip] % 100 {
             1 => {
                 let (source1, source2, destination) =
-                    get_operands_3(&mut opcodes, &mut ip, relative_base);
+                    get_operands_3(opcodes, ip, state.relative_base);
                 opcodes[destination] = source1 + source2;
             }
             2 => {
                 let (source1, source2, destination) =
-                    get_operands_3(&mut opcodes, &mut ip, relative_base);
+                    get_operands_3(opcodes, ip, state.relative_base);
                 opcodes[destination] = source1 * source2;
             }
             3 => {
-                let destination = get_write_index_at(&mut opcodes, ip, 1, relative_base);
-                opcodes[destination] = input.next().await.expect("insufficient input provided");
-                ip += 2;
+                let destination = get_write_index_at(opcodes, *ip, 1, state.relative_base);
+                opcodes[destination] = state
+                    .input
+                    .next()
+                    .await
+                    .expect("insufficient input provided");
+                *ip += 2;
             }
             4 => {
-                let source = get_read_operand_at(&mut opcodes, ip, 1, relative_base);
-                return Some((
-                    Status::Output(source),
-                    (opcodes, input, ip + 2, relative_base, false),
-                ));
+                let source = get_read_operand_at(opcodes, *ip, 1, state.relative_base);
+                *ip += 2;
+                return Some((Status::Output(source), state));
             }
             5 => {
-                let (comparison, target) = get_operands_2(&mut opcodes, &mut ip, relative_base);
+                let (comparison, target) = get_operands_2(opcodes, ip, state.relative_base);
                 if comparison != 0 {
-                    ip = target.try_into().expect("invalid jump address");
+                    *ip = target.try_into().expect("invalid jump address");
                 }
             }
             6 => {
-                let (comparison, target) = get_operands_2(&mut opcodes, &mut ip, relative_base);
+                let (comparison, target) = get_operands_2(opcodes, ip, state.relative_base);
                 if comparison == 0 {
-                    ip = target.try_into().expect("invalid jump address");
+                    *ip = target.try_into().expect("invalid jump address");
                 }
             }
             7 => {
                 let (source1, source2, destination) =
-                    get_operands_3(&mut opcodes, &mut ip, relative_base);
+                    get_operands_3(opcodes, ip, state.relative_base);
                 if source1 < source2 {
                     opcodes[destination] = 1;
                 } else {
@@ -118,7 +119,7 @@ async fn next_opcode(
             }
             8 => {
                 let (source1, source2, destination) =
-                    get_operands_3(&mut opcodes, &mut ip, relative_base);
+                    get_operands_3(opcodes, ip, state.relative_base);
                 if source1 == source2 {
                     opcodes[destination] = 1;
                 } else {
@@ -126,14 +127,18 @@ async fn next_opcode(
                 }
             }
             9 => {
-                let source = get_read_operand_at(&mut opcodes, ip, 1, relative_base);
-                relative_base += source;
-                ip += 2;
+                let source = get_read_operand_at(&mut state.opcodes, *ip, 1, state.relative_base);
+                state.relative_base += source;
+                *ip += 2;
             }
             99 => {
                 return Some((
-                    Status::Terminated(opcodes),
-                    (vec![], input, ip, relative_base, true),
+                    Status::Terminated(state.opcodes),
+                    InterpreterState {
+                        done: true,
+                        opcodes: vec![],
+                        ..state
+                    },
                 ))
             }
             x => panic!("unexpected opcode found in position {}: {}", ip, x),
