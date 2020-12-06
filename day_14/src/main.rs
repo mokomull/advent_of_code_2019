@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use itertools::Itertools;
+use num::Integer;
 
 fn main() {
     do_main("inputs/day_14.txt");
@@ -15,11 +16,11 @@ fn do_main(path: &str) {
         .map(|line| parse_reaction(&line))
         .collect::<Vec<_>>();
 
-    let part1 = how_much_ore_to_make_a("FUEL", &reactions);
+    let part1 = how_much_ore_to_make(1, "FUEL", &reactions);
     dbg!(part1);
 }
 
-fn how_much_ore_to_make_a(what: &str, reactions: &[Reaction]) -> usize {
+fn how_much_ore_to_make(how_many: usize, what: &str, reactions: &[Reaction]) -> usize {
     let target = reactions
         .iter()
         .filter(|&reaction| reaction.output == what)
@@ -31,11 +32,11 @@ fn how_much_ore_to_make_a(what: &str, reactions: &[Reaction]) -> usize {
         if element == "ORE" {
             total += count;
         } else {
-            total += count * how_much_ore_to_make_a(element, reactions);
+            total += how_much_ore_to_make(*count, element, reactions);
         }
     }
 
-    total
+    total * how_many / total.gcd(&how_many)
 }
 
 #[derive(Debug, Eq, PartialEq)]
