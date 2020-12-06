@@ -14,6 +14,28 @@ fn do_main(path: &str) {
         .map(|line| line.expect("could not read line"))
         .map(|line| parse_reaction(&line))
         .collect::<Vec<_>>();
+
+    let part1 = how_much_ore_to_make_a("FUEL", &reactions);
+    dbg!(part1);
+}
+
+fn how_much_ore_to_make_a(what: &str, reactions: &[Reaction]) -> usize {
+    let target = reactions
+        .iter()
+        .filter(|&reaction| reaction.output == what)
+        .next()
+        .expect("universe of reactions doesn't know how to make this");
+
+    let mut total = 0;
+    for (element, count) in target.inputs.iter() {
+        if element == "ORE" {
+            total += count;
+        } else {
+            total += count * how_much_ore_to_make_a(element, reactions);
+        }
+    }
+
+    total
 }
 
 #[derive(Debug, Eq, PartialEq)]
