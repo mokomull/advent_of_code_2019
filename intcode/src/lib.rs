@@ -69,67 +69,61 @@ async fn next_opcode(mut state: InterpreterState) -> Option<(Status, Interpreter
     }
 
     loop {
-        let opcodes = &mut state.opcodes;
-        let ip = &mut state.ip;
-        match opcodes[*ip] % 100 {
+        match state.opcodes[state.ip] % 100 {
             1 => {
-                let (source1, source2, destination) =
-                    get_operands_3(opcodes, ip, state.relative_base);
-                opcodes[destination] = source1 + source2;
+                let (source1, source2, destination) = state.consume_operands_3();
+                state.opcodes[destination] = source1 + source2;
             }
             2 => {
-                let (source1, source2, destination) =
-                    get_operands_3(opcodes, ip, state.relative_base);
-                opcodes[destination] = source1 * source2;
+                let (source1, source2, destination) = state.consume_operands_3();
+                state.opcodes[destination] = source1 * source2;
             }
             3 => {
-                let destination = get_write_index_at(opcodes, *ip, 1, state.relative_base);
-                opcodes[destination] = state
+                let destination = state.get_write_index_at(1);
+                state.opcodes[destination] = state
                     .input
                     .next()
                     .await
                     .expect("insufficient input provided");
-                *ip += 2;
+                state.ip += 2;
             }
             4 => {
-                let source = get_read_operand_at(opcodes, *ip, 1, state.relative_base);
-                *ip += 2;
+                let source = state.get_read_operand_at(1);
+                state.ip += 2;
                 return Some((Status::Output(source), state));
             }
             5 => {
-                let (comparison, target) = get_operands_2(opcodes, ip, state.relative_base);
+                let (comparison, target) = state.consume_operands_2();
                 if comparison != 0 {
-                    *ip = target.try_into().expect("invalid jump address");
+                    state.ip = target.try_into().expect("invalid jump address");
                 }
             }
             6 => {
-                let (comparison, target) = get_operands_2(opcodes, ip, state.relative_base);
+                let (comparison, target) = state.consume_operands_2();
                 if comparison == 0 {
-                    *ip = target.try_into().expect("invalid jump address");
+                    state.ip = target.try_into().expect("invalid jump address");
                 }
             }
             7 => {
-                let (source1, source2, destination) =
-                    get_operands_3(opcodes, ip, state.relative_base);
+                let (source1, source2, destination) = state.consume_operands_3();
                 if source1 < source2 {
-                    opcodes[destination] = 1;
+                    state.opcodes[destination] = 1;
                 } else {
-                    opcodes[destination] = 0;
+                    state.opcodes[destination] = 0;
                 }
             }
             8 => {
-                let (source1, source2, destination) =
-                    get_operands_3(opcodes, ip, state.relative_base);
+                let (source1, source2, destination) = state.consume_operands_3();
                 if source1 == source2 {
-                    opcodes[destination] = 1;
+                    state.opcodes[destination] = 1;
                 } else {
-                    opcodes[destination] = 0;
+                    state.opcodes[destination] = 0;
                 }
             }
             9 => {
-                let source = get_read_operand_at(&mut state.opcodes, *ip, 1, state.relative_base);
+                let source = state.get_read_operand_at(1);
                 state.relative_base += source;
-                *ip += 2;
+                state.ip += 2;
             }
             99 => {
                 return Some((
@@ -141,84 +135,68 @@ async fn next_opcode(mut state: InterpreterState) -> Option<(Status, Interpreter
                     },
                 ))
             }
-            x => panic!("unexpected opcode found in position {}: {}", ip, x),
+            x => panic!("unexpected opcode found in position {}: {}", state.ip, x),
         }
     }
 }
 
-fn get_operands_3(
-    opcodes: &mut Vec<isize>,
-    ip: &mut usize,
-    relative_base: isize,
-) -> (isize, isize, usize) {
-    let source1 = get_read_operand_at(opcodes, *ip, 1, relative_base);
-    let source2 = get_read_operand_at(opcodes, *ip, 2, relative_base);
-    let destination = get_write_index_at(opcodes, *ip, 3, relative_base);
+impl InterpreterState {
+    fn consume_operands_3(&mut self) -> (isize, isize, usize) {
+        let source1 = self.get_read_operand_at(1);
+        let source2 = self.get_read_operand_at(2);
+        let destination = self.get_write_index_at(3);
 
-    *ip += 4;
+        self.ip += 4;
 
-    (source1, source2, destination)
-}
+        (source1, source2, destination)
+    }
 
-fn get_operands_2(
-    opcodes: &mut Vec<isize>,
-    ip: &mut usize,
-    relative_base: isize,
-) -> (isize, isize) {
-    let source1 = get_read_operand_at(opcodes, *ip, 1, relative_base);
-    let source2 = get_read_operand_at(opcodes, *ip, 2, relative_base);
+    fn consume_operands_2(&mut self) -> (isize, isize) {
+        let source1 = self.get_read_operand_at(1);
+        let source2 = self.get_read_operand_at(2);
 
-    *ip += 3;
+        self.ip += 3;
 
-    (source1, source2)
-}
+        (source1, source2)
+    }
 
-fn get_read_operand_at(
-    opcodes: &mut Vec<isize>,
-    ip: usize,
-    idx: usize,
-    relative_base: isize,
-) -> isize {
-    let source_idx = opcodes[ip + idx];
-    match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
-        0 => {
-            let source_idx: usize = source_idx.try_into().expect("un-indexable memory offset");
-            if source_idx >= opcodes.len() {
-                opcodes.resize(source_idx + 1, 0);
+    fn get_read_operand_at(&mut self, idx: usize) -> isize {
+        let source_idx = self.opcodes[self.ip + idx];
+        match self.opcodes[self.ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
+            0 => {
+                let source_idx: usize = source_idx.try_into().expect("un-indexable memory offset");
+                if source_idx >= self.opcodes.len() {
+                    self.opcodes.resize(source_idx + 1, 0);
+                }
+                self.opcodes[source_idx]
             }
-            opcodes[source_idx]
+            1 => source_idx,
+            2 => {
+                let source_idx: usize = (source_idx + self.relative_base)
+                    .try_into()
+                    .expect("un-indexable memory offset");
+                self.opcodes[source_idx]
+            }
+            x => panic!("Invalid parameter mode {} at ip {}", x, self.ip),
         }
-        1 => source_idx,
-        2 => {
-            let source_idx: usize = (source_idx + relative_base)
-                .try_into()
-                .expect("un-indexable memory offset");
-            opcodes[source_idx]
-        }
-        x => panic!("Invalid parameter mode {} at ip {}", x, ip),
     }
-}
 
-fn get_write_index_at(
-    opcodes: &mut Vec<isize>,
-    ip: usize,
-    idx: usize,
-    relative_base: isize,
-) -> usize {
-    let destination_idx = opcodes[ip + idx];
-    let index = match opcodes[ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
-        0 => destination_idx
-            .try_into()
-            .expect("un-indexable memory offset"),
-        2 => (destination_idx + relative_base)
-            .try_into()
-            .expect("un-indexable memory offset"),
-        x => panic!("Invalid destination parameter mode {} at ip {}", x, ip),
-    };
-    if index >= opcodes.len() {
-        opcodes.resize(index + 1, 0);
+    fn get_write_index_at(&mut self, idx: usize) -> usize {
+        let destination_idx = self.opcodes[self.ip + idx];
+        let index = match self.opcodes[self.ip] / 10isize.pow((idx + 1).try_into().unwrap()) % 10 {
+            0 => destination_idx
+                .try_into()
+                .expect("un-indexable memory offset"),
+            2 => (destination_idx + self.relative_base)
+                .try_into()
+                .expect("un-indexable memory offset"),
+            x => panic!("Invalid destination parameter mode {} at ip {}", x, self.ip),
+        };
+        if index >= self.opcodes.len() {
+            self.opcodes.resize(index + 1, 0);
+        }
+        index
     }
-    index
 }
 
 #[cfg(test)]
