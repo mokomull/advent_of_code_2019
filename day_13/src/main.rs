@@ -12,14 +12,52 @@ fn do_main(path: &str) {
     let program =
         intcode::parse_opcodes(&std::fs::read_to_string(path).expect("could not read input"));
 
-    let block_tiles = futures::executor::block_on(count_block_tiles(program));
+    let block_tiles = futures::executor::block_on(count_block_tiles(program.clone()));
     println!("Block tiles: {}", block_tiles);
     assert_eq!(block_tiles, 309);
+
+    let score = futures::executor::block_on(get_score(program));
+    println!("Score: {}", score);
 }
 
 async fn count_block_tiles(program: Vec<isize>) -> usize {
     let tiles = run_game(program, |_| panic!("This program should not take input")).await;
     tiles.iter().filter(|(_, &v)| v == 2 /* block */).count()
+}
+
+async fn get_score(mut program: Vec<isize>) -> isize {
+    // the problem statement says that the first memory cell should be '2' to play for free.
+    program[0] = 2;
+
+    let tiles = run_game(program, |tiles| {
+        // find the ball and the paddle within the display
+        let ball = tiles
+            .iter()
+            .filter(|(&_location, &kind)| kind == 4)
+            .next()
+            .expect("the ball was not found")
+            .0;
+        let paddle = tiles
+            .iter()
+            .filter(|(&_location, &kind)| kind == 3)
+            .next()
+            .expect("the ball was not found")
+            .0;
+
+        // and move the joystick in the direction of the ball
+        if ball.0 < paddle.0 {
+            -1
+        } else if ball.0 > paddle.0 {
+            1
+        } else {
+            0
+        }
+    })
+    .await;
+    tiles
+        .get(&(-1, 0))
+        .expect("the score was not written by the intcode program")
+        .clone()
 }
 
 async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + 'static>(
