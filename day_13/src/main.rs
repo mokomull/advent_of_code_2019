@@ -18,6 +18,7 @@ fn do_main(path: &str) {
 
     let score = futures::executor::block_on(get_score(program));
     println!("Score: {}", score);
+    assert_eq!(score, 15410);
 }
 
 async fn count_block_tiles(program: Vec<isize>) -> usize {
