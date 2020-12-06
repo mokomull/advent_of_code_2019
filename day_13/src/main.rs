@@ -1,3 +1,7 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use futures::stream::StreamExt;
 
 fn main() {
@@ -14,9 +18,22 @@ fn do_main(path: &str) {
 }
 
 async fn count_block_tiles(program: Vec<isize>) -> usize {
-    let (_tx, rx) = futures::channel::mpsc::channel::<isize>(1);
-    let mut intcode = intcode::stream_with_io(program, Box::new(rx));
-    let mut tiles = std::collections::HashMap::new();
+    let tiles = run_game(program, |_| panic!("This program should not take input")).await;
+    tiles.iter().filter(|(_, &v)| v == 2 /* block */).count()
+}
+
+async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + 'static>(
+    program: Vec<isize>,
+    mut read_input: F,
+) -> HashMap<(isize, isize), isize> {
+    let tiles = Arc::new(RefCell::new(HashMap::new()));
+    let tiles_for_input = tiles.clone();
+    let mut intcode = intcode::stream_with_io(
+        program,
+        Box::new(InputStream {
+            fun: move || read_input(&tiles_for_input.borrow()),
+        }),
+    );
 
     loop {
         let (x, rest) = intcode.into_future().await;
@@ -39,12 +56,29 @@ async fn count_block_tiles(program: Vec<isize>) -> usize {
             intcode::Status::Output(tile) => tile,
         };
 
-        tiles.insert((x, y), tile);
+        tiles.borrow_mut().insert((x, y), tile);
 
         intcode = rest;
     }
 
-    tiles.iter().filter(|(_, &v)| v == 2 /* block */).count()
+    Arc::try_unwrap(tiles)
+        .expect("the intcode interpreter should no longer reference tiles")
+        .into_inner()
+}
+
+struct InputStream<F: FnMut() -> isize + Unpin> {
+    fun: F,
+}
+
+impl<F: FnMut() -> isize + Unpin> futures::Stream for InputStream<F> {
+    type Item = isize;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        _cx: &mut futures::task::Context<'_>,
+    ) -> futures::task::Poll<Option<Self::Item>> {
+        futures::task::Poll::Ready(Some((self.fun)()))
+    }
 }
 
 #[cfg(test)]
