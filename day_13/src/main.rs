@@ -30,9 +30,9 @@ async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + '
     let tiles_for_input = tiles.clone();
     let mut intcode = intcode::stream_with_io(
         program,
-        Box::new(InputStream {
-            fun: move || read_input(&tiles_for_input.borrow()),
-        }),
+        Box::new(futures::stream::poll_fn(move |_ctx| {
+            futures::task::Poll::Ready(Some(read_input(&tiles_for_input.borrow())))
+        })),
     );
 
     loop {
@@ -64,21 +64,6 @@ async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + '
     Arc::try_unwrap(tiles)
         .expect("the intcode interpreter should no longer reference tiles")
         .into_inner()
-}
-
-struct InputStream<F: FnMut() -> isize + Unpin> {
-    fun: F,
-}
-
-impl<F: FnMut() -> isize + Unpin> futures::Stream for InputStream<F> {
-    type Item = isize;
-
-    fn poll_next(
-        mut self: std::pin::Pin<&mut Self>,
-        _cx: &mut futures::task::Context<'_>,
-    ) -> futures::task::Poll<Option<Self::Item>> {
-        futures::task::Poll::Ready(Some((self.fun)()))
-    }
 }
 
 #[cfg(test)]
