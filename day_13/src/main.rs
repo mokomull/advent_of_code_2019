@@ -75,7 +75,7 @@ async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + '
     );
 
     loop {
-        let (x, rest) = intcode.into_future().await;
+        let x = intcode.next().await;
         // check the first opcode to see if it terminated
         let x = match x.expect("intcode interpreter ended unexpectedly") {
             intcode::Status::Terminated(_) => break,
@@ -83,8 +83,8 @@ async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + '
         };
 
         // and if it didn't terminate, assume that the other two to at least produce *something*
-        let (y, rest) = rest.into_future().await;
-        let (tile, rest) = rest.into_future().await;
+        let y = intcode.next().await;
+        let tile = intcode.next().await;
 
         let y = match y.expect("intcode interpreter ended unexpectedly") {
             intcode::Status::Terminated(_) => break,
@@ -96,9 +96,9 @@ async fn run_game<F: FnMut(&HashMap<(isize, isize), isize>) -> isize + Unpin + '
         };
 
         tiles.borrow_mut().insert((x, y), tile);
-
-        intcode = rest;
     }
+
+    std::mem::drop(intcode);
 
     Arc::try_unwrap(tiles)
         .expect("the intcode interpreter should no longer reference tiles")

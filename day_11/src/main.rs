@@ -60,8 +60,8 @@ async fn paint_panels(
         let this_color = *panels.get(&(x, y)).unwrap_or(&0);
         tx.try_send(this_color)
             .expect("too much queued in the mpsc channel");
-        let (paint_this, rest) = intcode.into_future().await;
-        let (direction, rest) = rest.into_future().await;
+        let paint_this = intcode.next().await;
+        let direction = intcode.next().await;
 
         let paint_this =
             match paint_this.expect("intcode interpreter stopped before signaling termination") {
@@ -91,8 +91,6 @@ async fn paint_panels(
 
         x += dx;
         y += dy;
-
-        intcode = rest;
     }
 
     panels
