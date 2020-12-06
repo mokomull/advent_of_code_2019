@@ -59,13 +59,13 @@ async fn next_opcode(
     ),
 ) -> Option<(
     Status,
-    ((
+    (
         Vec<isize>,
         Box<dyn Stream<Item = isize> + Unpin>,
         usize,
         isize,
         bool,
-    )),
+    ),
 )> {
     if done {
         return None;
