@@ -98,4 +98,35 @@ mod test {
             }
         );
     }
+
+    fn parse_string(input: &str) -> Vec<super::Reaction> {
+        input
+            .lines()
+            .map(|line| super::parse_reaction(line))
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn calculate_ore() {
+        let example = parse_string(
+            "10 ORE => 10 A
+1 ORE => 1 B
+7 A, 1 B => 1 C
+7 A, 1 C => 1 D
+7 A, 1 D => 1 E
+7 A, 1 E => 1 FUEL",
+        );
+        assert_eq!(super::how_much_ore_to_make(1, "FUEL", &example), 31);
+
+        let example = parse_string(
+            "9 ORE => 2 A
+8 ORE => 3 B
+7 ORE => 5 C
+3 A, 4 B => 1 AB
+5 B, 7 C => 1 BC
+4 C, 1 A => 1 CA
+2 AB, 3 BC, 4 CA => 1 FUEL",
+        );
+        assert_eq!(super::how_much_ore_to_make(1, "FUEL", &example), 165);
+    }
 }
