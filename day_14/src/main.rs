@@ -17,6 +17,7 @@ fn do_main(path: &str) {
 
     let part1 = how_much_ore_to_make(1, "FUEL", &reactions);
     dbg!(part1);
+    assert_eq!(part1, 483766);
 }
 
 fn how_much_ore_to_make(how_many: usize, what: &str, reactions: &[Reaction]) -> usize {
@@ -145,5 +146,10 @@ mod test {
 2 AB, 3 BC, 4 CA => 1 FUEL",
         );
         assert_eq!(super::how_much_ore_to_make(1, "FUEL", &example), 165);
+    }
+
+    #[test]
+    fn main() {
+        super::do_main("../inputs/day_14.txt");
     }
 }
