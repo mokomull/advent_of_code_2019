@@ -3,7 +3,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use itertools::Itertools;
-use num::Integer;
 
 fn main() {
     do_main("inputs/day_14.txt");
@@ -21,22 +20,40 @@ fn do_main(path: &str) {
 }
 
 fn how_much_ore_to_make(how_many: usize, what: &str, reactions: &[Reaction]) -> usize {
-    let target = reactions
+    let mut needed = [(what.to_owned(), how_many), ("ORE".into(), 0)]
         .iter()
-        .filter(|&reaction| reaction.output == what)
-        .next()
-        .expect("universe of reactions doesn't know how to make this");
+        .cloned()
+        .collect::<HashMap<_, _>>();
+    let mut extra = HashMap::new();
 
-    let mut total = 0;
-    for (element, count) in target.inputs.iter() {
-        if element == "ORE" {
-            total += count;
-        } else {
-            total += how_much_ore_to_make(*count, element, reactions);
+    while needed.len() > 1 {
+        let this_element = needed
+            .keys()
+            .filter(|&element| element != "ORE")
+            .cloned()
+            .next()
+            .unwrap();
+
+        let this_count = needed.remove(&this_element).unwrap();
+
+        let target = reactions
+            .iter()
+            .filter(|&reaction| reaction.output == this_element)
+            .next()
+            .expect("universe of reactions doesn't know how to make this");
+
+        while *extra.get(&this_element).unwrap_or(&0) < this_count {
+            *extra.entry(this_element.clone()).or_insert(0) += target.output_count;
+
+            for (element, count) in target.inputs.iter() {
+                *needed.entry(element.clone()).or_insert(0) += count;
+            }
         }
+
+        *extra.get_mut(&this_element).unwrap() -= this_count;
     }
 
-    total * how_many / total.gcd(&how_many)
+    *needed.get("ORE").unwrap()
 }
 
 #[derive(Debug, Eq, PartialEq)]
